@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import api from '../service/api'
-import TripCard from '../components/ui/TripCard'
 import { Link, useNavigate } from 'react-router-dom'
+import { Plus, Trash2, Calendar, MapPin, MessageSquare, ArrowRight, ShieldCheck } from 'lucide-react'
 
 function MyTrips() {
     const { user } = useAuth()
@@ -11,7 +11,6 @@ function MyTrips() {
     const [creatorRequests, setCreatorRequests] = useState([])
     const [loading, setLoading] = useState(true)
     const navigate = useNavigate();
-
 
     useEffect(() => {
         const fetchData = async () => {
@@ -25,7 +24,7 @@ function MyTrips() {
                 setBookings(bookingsRes.data);
                 setCreatorRequests(requestsRes.data);
             } catch (error) {
-                console.error("Failed to fetch data", error);
+                console.error("Failed to fetch user journeys", error);
             } finally {
                 setLoading(false);
             }
@@ -38,266 +37,308 @@ function MyTrips() {
         if (!window.confirm("Are you sure you want to cancel this join request?")) return;
         try {
             await api.delete(`/bookings/${id}`);
-            // Remove from local state and re-sync
             setBookings(prev => prev.filter(b => b._id !== id));
-            // Trigger a refresh of the entire data to ensure consistency (e.g. if the trip was cancelled)
-            // But for now, just filtering is fine for speed.
         } catch (error) {
-            console.error("Failed to remove booking", error);
+            console.error("Failed to cancel request", error);
             alert("Failed to cancel join request. Please try again.");
         }
     };
 
     const handleRemoveTrip = async (id) => {
-        if (!window.confirm("Are you sure you want to delete this trip? This will also remove all group messages and join requests.")) return;
+        if (!window.confirm("Are you sure you want to delete this journey? This will remove its associated messages and requests.")) return;
         try {
             await api.delete(`/trips/${id}`);
-            // Remove from local state
             setTrips(prev => prev.filter(t => t._id !== id));
         } catch (error) {
-            console.error("Failed to remove trip", error);
-            alert("Failed to delete trip. You might not have permission or the trip may have already been deleted.");
+            console.error("Failed to remove journey", error);
+            alert("Failed to delete journey.");
         }
     };
 
-    if (loading) return <div className='p-10 text-center'>Loading...</div>
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center">
+                <div className="flex flex-col items-center gap-3">
+                    <div className="w-10 h-10 border-3 border-[#00B4D8] border-t-transparent rounded-full animate-spin" />
+                    <p className="text-xs font-semibold text-slate-500">Loading your journeys...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
-        <div className='min-h-screen bg-gray-50/50 px-5 sm:px-10 md:px-24 lg:px-32 xl:px-48 py-12'>
-            <div>
-                <div className='flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8'>
-                    <div className='flex items-center gap-4'>
-                        <div className='w-2 h-10 bg-gradient-to-b from-blue-600 to-purple-600 rounded-full'></div>
-                        <h1 className='font-extrabold text-4xl text-gray-900'>My Created Trips</h1>
+        <div className="min-h-screen bg-[#F8FAFC] py-12 px-4 sm:px-6 lg:px-8">
+            <div className="max-w-7xl mx-auto space-y-14">
+
+                {/* Section 1: Created Journeys */}
+                <div>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+                        <div>
+                            <span className="text-xs font-bold uppercase tracking-wider text-[#00B4D8]">
+                                Your Adventure Portfolio
+                            </span>
+                            <h1 className="text-2xl sm:text-3xl font-extrabold text-[#0A1628] font-jakarta mt-0.5">
+                                My Created Journeys
+                            </h1>
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                            {(user?.role === 'organiser' || user?.role === 'admin') && (
+                                <Link
+                                    to={user.role === 'admin' ? "/admin" : "/organiser"}
+                                    className="px-4 py-2 bg-white border border-slate-200 text-slate-700 hover:text-[#00B4D8] rounded-xl text-xs font-bold shadow-xs transition-colors"
+                                >
+                                    {user.role === 'admin' ? 'Admin Portal' : 'Organiser Hub'}
+                                </Link>
+                            )}
+
+                            <Link
+                                to="/create-trip"
+                                className="px-4 py-2 bg-[#00B4D8] hover:bg-[#0096B4] text-white rounded-xl text-xs font-bold shadow-xs flex items-center gap-1.5 transition-colors"
+                            >
+                                <Plus className="w-4 h-4" />
+                                <span>Plan New Journey</span>
+                            </Link>
+                        </div>
                     </div>
 
-                    {(user?.role === 'organiser' || user?.role === 'admin') && (
-                        <Link
-                            to={user.role === 'admin' ? "/admin" : "/organiser"}
-                            className='inline-flex items-center gap-2 px-6 py-3 bg-white border-2 border-blue-100 text-blue-600 rounded-2xl font-bold hover:bg-blue-50 transition-all shadow-sm'
-                        >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" /></svg>
-                            Go to {user.role === 'admin' ? 'Admin' : 'Organiser'} Panel
-                        </Link>
+                    {trips.length > 0 ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {trips.map((trip) => (
+                                <div key={trip._id} className="relative group bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-xs hover:shadow-md hover:border-[#00B4D8]/40 transition-all flex flex-col">
+                                    <div className="relative h-48 overflow-hidden bg-slate-100">
+                                        <img
+                                            src={trip.tripData?.locationInfo?.photoUrl ||
+                                                 (trip.destination?.toLowerCase().includes("kyoto") ? "/assets/pathora/destinations/kyoto-banner.jpg" :
+                                                  trip.destination?.toLowerCase().includes("bali") ? "/assets/pathora/destinations/bali.jpg" :
+                                                  trip.destination?.toLowerCase().includes("paris") ? "/assets/pathora/destinations/paris.jpg" :
+                                                  "/assets/pathora/destinations/santorini.jpg")}
+                                            alt={trip.destination}
+                                            className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                        />
+                                        <div className="absolute top-3 right-3">
+                                            <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider text-white shadow-xs ${
+                                                trip.status === 'approved' ? 'bg-emerald-600' :
+                                                trip.status === 'rejected' ? 'bg-rose-600' :
+                                                'bg-amber-500'
+                                            }`}>
+                                                {trip.status || 'Active'}
+                                            </span>
+                                        </div>
+                                        <button
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                handleRemoveTrip(trip._id);
+                                            }}
+                                            className="absolute top-3 left-3 p-2 bg-black/40 hover:bg-rose-600 text-white rounded-full transition-colors backdrop-blur-xs cursor-pointer"
+                                            title="Delete Journey"
+                                        >
+                                            <Trash2 className="w-3.5 h-3.5" />
+                                        </button>
+                                    </div>
+
+                                    <div className="p-5 flex-1 flex flex-col justify-between">
+                                        <div>
+                                            <h3 className="font-bold text-base text-[#0A1628] truncate mb-1 font-jakarta group-hover:text-[#00B4D8] transition-colors">
+                                                {trip.destination}
+                                            </h3>
+                                            <p className="text-xs text-slate-500 flex items-center gap-1 mb-3">
+                                                <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                                                Created {new Date(trip.createdAt).toLocaleDateString()}
+                                            </p>
+                                        </div>
+
+                                        <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
+                                            <span className="px-2.5 py-0.5 rounded-md text-[11px] font-bold bg-[#F0F9FF] text-[#0096B4]">
+                                                {trip.duration || 3} Days • {trip.budget || 'Moderate'}
+                                            </span>
+                                            <Link
+                                                to={`/view-trip/${trip._id}`}
+                                                className="text-xs font-bold text-[#00B4D8] hover:underline flex items-center gap-1"
+                                            >
+                                                <span>View Path</span>
+                                                <ArrowRight className="w-3.5 h-3.5" />
+                                            </Link>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="bg-white border border-slate-200 rounded-2xl p-12 text-center max-w-md mx-auto shadow-xs">
+                            <img
+                                src="/assets/pathora/illustrations/empty-trips.svg"
+                                alt="No journeys yet"
+                                className="w-48 h-36 mx-auto mb-4"
+                            />
+                            <h3 className="text-lg font-bold text-[#0A1628] font-jakarta mb-1">No Journeys Created Yet</h3>
+                            <p className="text-xs text-slate-500 mb-6">
+                                Experience intelligent travel curation. Let Pathora create your custom schedule in seconds.
+                            </p>
+                            <Link
+                                to="/create-trip"
+                                className="px-6 py-2.5 bg-[#00B4D8] hover:bg-[#0096B4] text-white text-xs font-bold rounded-xl transition-colors shadow-xs inline-block"
+                            >
+                                Plan Your First Journey
+                            </Link>
+                        </div>
                     )}
                 </div>
 
-                {trips.length > 0 ? (
-                    <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8'>
-                        {trips.map((trip, index) => (
-                            <div key={index} className='relative group h-full'>
-                                <Link to={`/view-trip/${trip._id}`} className='block h-full'>
-                                    <div className='bg-white border border-gray-100 rounded-2xl overflow-hidden hover:shadow-2xl transition-all duration-500 cursor-pointer h-full flex flex-col group/card'>
-                                        <div className='relative h-56 overflow-hidden'>
-                                            <img
-                                                src={trip.tripData?.locationInfo?.photoUrl || trip.tripData?.hotels?.[0]?.imageUrl || '/placeholder.jpg'}
-                                                alt={trip.destination}
-                                                className='h-full w-full object-cover transition-transform duration-700 group-hover/card:scale-110'
-                                                onError={(e) => {
-                                                    if (e.target.src.includes(trip.tripData?.locationInfo?.photoUrl) && trip.tripData?.hotels?.[0]?.imageUrl) {
-                                                        e.target.src = trip.tripData?.hotels?.[0]?.imageUrl;
-                                                    } else {
-                                                        e.target.src = '/placeholder.jpg';
-                                                    }
-                                                }}
-                                            />
-                                            <div className='absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover/card:opacity-100 transition-opacity duration-300 flex items-end p-6'>
-                                                <p className='text-white text-sm font-medium'>View Full Itinerary</p>
-                                            </div>
-                                            <div className='absolute top-4 right-4'>
-                                                <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider shadow-lg ${trip.status === 'approved' ? 'bg-green-500 text-white' :
-                                                    trip.status === 'rejected' ? 'bg-red-500 text-white' :
-                                                        'bg-amber-500 text-white'
-                                                    }`}>
-                                                    {trip.status}
-                                                </span>
-                                            </div>
+                {/* Section 2: Joined Journeys */}
+                <div className="pt-10 border-t border-slate-200">
+                    <div className="mb-6">
+                        <span className="text-xs font-bold uppercase tracking-wider text-[#00B4D8]">
+                            Community Expeditions
+                        </span>
+                        <h2 className="text-2xl font-extrabold text-[#0A1628] font-jakarta mt-0.5">
+                            Joined Departures
+                        </h2>
+                    </div>
+
+                    {bookings.length > 0 ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {bookings.map((booking) => (
+                                <div key={booking._id} className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs flex flex-col justify-between">
+                                    <div>
+                                        <div className="flex items-center justify-between mb-3">
+                                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                                                booking.status === 'approved' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+                                                booking.status === 'rejected' ? 'bg-rose-50 text-rose-700 border border-rose-200' :
+                                                'bg-amber-50 text-amber-700 border border-amber-200'
+                                            }`}>
+                                                {booking.status}
+                                            </span>
+                                            <button
+                                                onClick={() => handleRemoveBooking(booking._id)}
+                                                className="text-xs text-slate-400 hover:text-rose-600 transition-colors cursor-pointer"
+                                            >
+                                                Cancel
+                                            </button>
                                         </div>
 
-                                        <div className='p-6 flex-1 flex flex-col'>
-                                            <h2 className='font-bold text-xl text-gray-900 mb-2 truncate group-hover/card:text-blue-600 transition-colors'>
-                                                {trip.destination}
-                                            </h2>
-                                            <div className='flex items-center gap-2 text-gray-500 text-sm mb-4'>
-                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                                                {new Date(trip.createdAt).toLocaleDateString()}
-                                            </div>
-                                            <div className='mt-auto flex flex-wrap gap-2'>
-                                                <span className='px-3 py-1 bg-blue-50 text-blue-600 rounded-lg text-xs font-semibold border border-blue-100'>
-                                                    {trip.duration || 3} Days
-                                                </span>
-                                                <span className='px-3 py-1 bg-purple-50 text-purple-600 rounded-lg text-xs font-semibold border border-purple-100'>
-                                                    {trip.budget || 'Budget'}
-                                                </span>
-                                                {trip.requestOrganiser && (
-                                                    <span className='px-3 py-1 bg-emerald-50 text-emerald-600 rounded-lg text-xs font-semibold border border-emerald-100 flex items-center gap-1'>
-                                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
-                                                        Lead
-                                                    </span>
-                                                )}
-                                            </div>
-                                        </div>
+                                        <h3 className="font-bold text-base text-[#0A1628] mb-1 font-jakarta truncate">
+                                            {booking.destination}
+                                        </h3>
+                                        <p className="text-xs text-slate-500 truncate mb-4">
+                                            {booking.hotelName || 'Community Group Journey'}
+                                        </p>
                                     </div>
-                                </Link>
-                                <button
-                                    onClick={(e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        handleRemoveTrip(trip._id);
-                                    }}
-                                    className='absolute top-4 left-4 p-2 bg-white/90 backdrop-blur-sm text-red-500 rounded-full hover:bg-red-500 hover:text-white transition-all duration-300 z-20 shadow-lg border border-transparent hover:border-red-600'
-                                    title="Delete Trip"
-                                >
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /></svg>
-                                </button>
-                            </div>
-                        ))}
-                    </div>
-                ) : (
-                    <div className='bg-white border-2 border-dashed border-gray-200 rounded-3xl p-16 text-center shadow-sm'>
-                        <div className='w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-6'>
-                            <svg className="w-10 h-10 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                        </div>
-                        <h2 className='text-2xl font-bold text-gray-800 mb-3'>No Created Trips</h2>
-                        <p className='text-gray-500 mb-8 max-w-sm mx-auto'>You haven't generated any trips yet. Start planning your perfect itinerary now!</p>
-                        <Link
-                            to="/create-trip"
-                            className='inline-flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold rounded-xl hover:shadow-xl transition-all'
-                        >
-                            Create First Trip
-                        </Link>
-                    </div>
-                )}
-            </div>
 
-            <div className='pt-8 border-t border-gray-100'>
-                <div className='flex items-center gap-4 mb-8'>
-                    <div className='w-2 h-10 bg-gradient-to-b from-emerald-600 to-green-600 rounded-full'></div>
-                    <h1 className='font-extrabold text-4xl text-gray-900'>Joined Trips</h1>
+                                    <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
+                                        <Link
+                                            to={booking.tripId ? `/view-trip/${booking.tripId?._id || booking.tripId}` : '#'}
+                                            className="text-xs font-bold text-slate-700 hover:text-[#00B4D8]"
+                                        >
+                                            View Details
+                                        </Link>
+
+                                        {booking.status === 'approved' && (
+                                            <Link
+                                                to={`/chat?tripId=${booking.tripId?._id || booking.tripId}`}
+                                                className="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-[#00B4D8] hover:bg-[#0096B4] text-white flex items-center gap-1.5 shadow-xs"
+                                            >
+                                                <MessageSquare className="w-3.5 h-3.5" />
+                                                <span>Group Chat</span>
+                                            </Link>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="bg-white border border-slate-200 rounded-2xl p-8 text-center max-w-sm mx-auto shadow-xs">
+                            <p className="text-xs text-slate-500 mb-3">You haven't requested to join any community trips yet.</p>
+                            <Link to="/explore" className="text-xs font-bold text-[#00B4D8] hover:underline">
+                                Browse Explore Page →
+                            </Link>
+                        </div>
+                    )}
                 </div>
 
-                {bookings.length > 0 ? (
-                    <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8'>
-                        {bookings.map((booking, index) => (
-                            <div key={index} className='relative h-full group'>
-                                <Link to={booking.tripId ? `/view-trip/${booking.tripId?._id || booking.tripId}` : '#'} className='block h-full'>
-                                    <div className='bg-white border border-gray-100 rounded-2xl overflow-hidden hover:shadow-2xl transition-all duration-500 h-full flex flex-col group/card relative'>
-                                        <div className='absolute top-4 right-4 z-10'>
-                                            <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider text-white shadow-lg
-                                                ${booking.status === 'approved' ? 'bg-green-500' : booking.status === 'rejected' ? 'bg-red-500' : 'bg-amber-500'}`}>
-                                                {booking.status}
+                {/* Section 3: Incoming Join Requests for Creator Trips */}
+                {creatorRequests && creatorRequests.length > 0 && (
+                    <div className="pt-10 border-t border-slate-200">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                            <div>
+                                <span className="text-xs font-bold uppercase tracking-wider text-[#FF6B35]">
+                                    Expedition Approvals
+                                </span>
+                                <h2 className="text-2xl font-extrabold text-[#0A1628] font-jakarta mt-0.5">
+                                    Incoming Join Requests ({creatorRequests.length})
+                                </h2>
+                                <p className="text-xs text-slate-500 mt-0.5">
+                                    Travelers requesting permission to join your curated paths.
+                                </p>
+                            </div>
+
+                            <Link
+                                to="/organiser"
+                                className="px-4 py-2 bg-[#0A1628] hover:bg-slate-800 text-white rounded-xl text-xs font-bold shadow-xs flex items-center gap-1.5 transition-colors w-fit"
+                            >
+                                <ShieldCheck className="w-4 h-4 text-[#00B4D8]" />
+                                <span>Manage in Organiser Hub</span>
+                            </Link>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {creatorRequests.map((request, index) => (
+                                <div key={index} className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs hover:border-[#00B4D8]/40 transition-all flex flex-col justify-between">
+                                    <div>
+                                        <div className="flex items-center justify-between mb-3">
+                                            <div className="w-9 h-9 rounded-full bg-[#E0F2FE] text-[#0096B4] flex items-center justify-center font-bold text-xs uppercase">
+                                                {request.userId?.username?.[0]?.toUpperCase() || 'U'}
+                                            </div>
+                                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                                                request.status === 'approved' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+                                                request.status === 'rejected' ? 'bg-rose-50 text-rose-700 border border-rose-200' :
+                                                'bg-amber-50 text-amber-700 border border-amber-200'
+                                            }`}>
+                                                {request.status}
                                             </span>
                                         </div>
 
-                                        <div className='relative h-48 overflow-hidden bg-gray-100'>
-                                            <img
-                                                src={booking.hotelImage || booking.tripId?.tripData?.locationInfo?.photoUrl || booking.tripId?.tripData?.hotels?.[0]?.imageUrl || '/placeholder.jpg'}
-                                                alt={booking.hotelName || booking.destination}
-                                                className='h-full w-full object-cover transition-transform duration-700 group-hover/card:scale-110'
-                                                onError={(e) => { e.target.src = '/placeholder.jpg'; }}
-                                            />
-                                        </div>
+                                        <h3 className="font-bold text-base text-[#0A1628] mb-0.5 font-jakarta truncate">
+                                            {request.userId?.username || 'Explorer'}
+                                        </h3>
+                                        <p className="text-xs text-slate-400 mb-3 truncate">{request.userId?.email}</p>
 
-                                        <div className='p-6 flex-1 flex flex-col'>
-                                            <h2 className='font-bold text-xl text-gray-900 mb-2 truncate group-hover/card:text-emerald-600 transition-colors'>
-                                                {booking.tripId?.tripData?.hotels?.[0]?.hotelName || booking.destination || 'Unnamed Trip'}
-                                            </h2>
-                                            <p className='text-sm text-gray-500 mb-4 italic line-clamp-1'>
-                                                {booking.destination}
+                                        <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
+                                            <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider mb-0.5">
+                                                Requested Path
+                                            </span>
+                                            <p className="text-xs font-bold text-[#0A1628] truncate">
+                                                {request.tripId?.destination || 'Your Journey'}
                                             </p>
-
-                                            <div className='mt-auto space-y-4'>
-                                                {booking.status === 'approved' && (
-                                                    <Link
-                                                        to={`/chat?tripId=${booking.tripId?._id || booking.tripId}`}
-                                                        onClick={(e) => e.stopPropagation()}
-                                                        className='w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-white text-center rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-100'
-                                                    >
-                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
-                                                        Community Chat
-                                                    </Link>
-                                                )}
-
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.preventDefault();
-                                                        e.stopPropagation();
-                                                        handleRemoveBooking(booking._id);
-                                                    }}
-                                                    className='w-full py-2 flex items-center justify-center gap-2 text-red-500 hover:text-red-700 text-xs font-semibold'
-                                                >
-                                                    Cancel Request
-                                                </button>
-                                            </div>
+                                            {request.hotelName && (
+                                                <p className="text-[11px] text-slate-500 truncate mt-0.5">
+                                                    {request.hotelName}
+                                                </p>
+                                            )}
                                         </div>
                                     </div>
-                                </Link>
-                            </div>
-                        ))}
-                    </div>
-                ) : (
-                    <div className='bg-gray-50 border-2 border-dashed border-gray-200 rounded-3xl p-16 text-center'>
-                        <div className='w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm'>
-                            <svg className="w-10 h-10 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" /></svg>
-                        </div>
-                        <h2 className='text-xl font-bold text-gray-600 mb-2'>No Joined Trips</h2>
-                        <p className='text-gray-400 max-w-xs mx-auto mb-6'>Join other community trips to meet fellow travelers!</p>
-                        <Link to="/explore" className='text-blue-600 font-bold hover:underline'>Explore Destinations →</Link>
-                    </div>
-                )}
-            </div>
 
-            {/* Incoming Requests for My Trips */}
-            {creatorRequests.length > 0 && (
-                <div className='pt-8 border-t border-gray-100'>
-                    <div className='flex items-center gap-4 mb-8'>
-                        <div className='w-2 h-10 bg-gradient-to-b from-amber-500 to-orange-600 rounded-full'></div>
-                        <h1 className='font-extrabold text-4xl text-gray-900'>Incoming Join Requests</h1>
-                    </div>
-
-                    <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8'>
-                        {creatorRequests.map((request, index) => (
-                            <div key={index} className='bg-white border border-blue-50 rounded-2xl p-6 shadow-sm hover:shadow-xl transition-all relative overflow-hidden group/req'>
-                                <div className='absolute top-0 right-0 w-24 h-24 bg-blue-50 rounded-bl-full -mr-8 -mt-8 transition-transform group-hover/req:scale-110'></div>
-
-                                <div className='relative z-10'>
-                                    <div className='flex justify-between items-start mb-6'>
-                                        <div className='w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center text-blue-600 font-extrabold text-xl shadow-inner'>
-                                            {request.userId?.username?.[0]?.toUpperCase() || 'U'}
-                                        </div>
-                                        <span className={`px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-widest ${request.status === 'approved' ? 'bg-green-100 text-green-700' :
-                                            request.status === 'rejected' ? 'bg-red-100 text-red-700' :
-                                                'bg-amber-100 text-amber-700'
-                                            }`}>
-                                            {request.status}
+                                    <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
+                                        <span className="text-[10px] text-slate-400">
+                                            {new Date(request.createdAt).toLocaleDateString()}
                                         </span>
-                                    </div>
-
-                                    <h3 className='font-bold text-gray-900 text-lg mb-1'>{request.userId?.username}</h3>
-                                    <p className='text-xs text-gray-400 mb-4'>{request.userId?.email}</p>
-
-                                    <div className='bg-gray-50 rounded-xl p-4 border border-gray-100'>
-                                        <p className='text-[10px] uppercase font-bold text-gray-400 mb-2'>Requesting to join</p>
-                                        <p className='text-sm font-bold text-gray-800 line-clamp-1'>{request.tripId?.destination || 'This Trip'}</p>
-                                        <p className='text-xs text-gray-500 mt-1 line-clamp-1'>{request.hotelName}</p>
-                                    </div>
-
-                                    <div className='mt-6 pt-4 border-t border-gray-50 flex items-center justify-between'>
-                                        <span className='text-[10px] text-gray-400'>{new Date(request.createdAt).toLocaleDateString()}</span>
-                                        <Link to="/organiser" className='text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1'>
-                                            Process Panel
-                                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+                                        <Link
+                                            to="/organiser"
+                                            className="text-xs font-bold text-[#00B4D8] hover:underline flex items-center gap-1"
+                                        >
+                                            <span>Process Request</span>
+                                            <ArrowRight className="w-3.5 h-3.5" />
                                         </Link>
                                     </div>
                                 </div>
-                            </div>
-                        ))}
+                            ))}
+                        </div>
                     </div>
-                </div>
-            )}
+                )}
+
+            </div>
         </div>
     )
 }
 
 export default MyTrips
-

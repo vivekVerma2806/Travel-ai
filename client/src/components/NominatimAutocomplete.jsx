@@ -29,7 +29,7 @@ function NominatimAutocomplete({ onChange }) {
         )}&limit=5`,
         {
           headers: {
-            'User-Agent': 'TravelAI/1.0'
+            'User-Agent': 'Pathora/1.0'
           }
         }
       )

@@ -182,10 +182,10 @@ const ViewDetails = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white flex items-center justify-center">
+      <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading details...</p>
+          <div className="w-12 h-12 border-3 border-[#00B4D8] border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="mt-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Loading waypoint details...</p>
         </div>
       </div>
     );
@@ -193,20 +193,20 @@ const ViewDetails = () => {
 
   if (!hotel) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white flex items-center justify-center px-4">
-        <div className="text-center max-w-md">
-          <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center">
-            <Hotel className="w-12 h-12 text-blue-500" />
+      <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center px-4">
+        <div className="text-center max-w-md bg-white p-8 rounded-3xl border border-slate-200 shadow-xs">
+          <div className="w-20 h-20 mx-auto mb-5 bg-[#E0F2FE] rounded-full flex items-center justify-center">
+            <Hotel className="w-10 h-10 text-[#00B4D8]" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-800 mb-3">No Details Found</h1>
-          <p className="text-gray-600 mb-8">
-            Please select a hotel or attraction to view details.
+          <h1 className="text-xl font-extrabold text-[#0A1628] font-jakarta mb-2">No Details Found</h1>
+          <p className="text-xs text-slate-500 mb-6">
+            Please select a destination waypoint, hotel, or attraction to inspect full details.
           </p>
           <button
             onClick={() => navigate(-1)}
-            className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium rounded-xl hover:shadow-lg transition-all duration-300"
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#00B4D8] hover:bg-[#0096B4] text-white text-xs font-bold rounded-xl shadow-xs transition-all cursor-pointer"
           >
-            <ArrowLeft className="w-5 h-5" />
+            <ArrowLeft className="w-4 h-4" />
             Go Back
           </button>
         </div>
@@ -217,27 +217,27 @@ const ViewDetails = () => {
   // Image generation moved up
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50/20 to-white text-left">
+    <div className="min-h-screen bg-[#F8FAFC] text-left">
       {/* Header */}
-      <div className="bg-white shadow-sm sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-4">
+      <div className="bg-white border-b border-slate-200 sticky top-0 z-10">
+        <div className="container mx-auto px-4 py-3.5">
           <div className="flex items-center justify-between">
             <button
               onClick={() => navigate(-1)}
-              className="flex items-center gap-2 text-gray-600 hover:text-blue-600 transition-colors"
+              className="flex items-center gap-2 text-slate-600 hover:text-[#00B4D8] transition-colors text-xs font-bold cursor-pointer"
             >
-              <ArrowLeft className="w-5 h-5" />
+              <ArrowLeft className="w-4 h-4" />
               <span>Back</span>
             </button>
 
-            <h1 className="text-xl md:text-2xl font-bold text-gray-900 truncate max-w-md">
+            <h1 className="text-lg md:text-xl font-extrabold text-[#0A1628] font-jakarta truncate max-w-md">
               {displayTitle}
             </h1>
 
             <div className="flex items-center gap-2">
-              <span className={`px-3 py-1 rounded-full text-xs font-semibold ${isHotel
-                ? 'bg-blue-100 text-blue-700'
-                : 'bg-emerald-100 text-emerald-700'}`}>
+              <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${isHotel
+                ? 'bg-[#E0F2FE] text-[#0096B4]'
+                : 'bg-emerald-50 text-emerald-700'}`}>
                 {isHotel ? 'Hotel' : 'Attraction'}
               </span>
             </div>
@@ -302,32 +302,32 @@ const ViewDetails = () => {
               </div>
 
               {/* Location */}
-              <div className="flex items-start gap-3 p-4 bg-blue-50 rounded-xl mb-6">
-                <MapPin className="w-5 h-5 text-blue-500 mt-1 flex-shrink-0" />
+              <div className="flex items-start gap-3 p-4 bg-[#F0F9FF] border border-[#BAE6FD]/60 rounded-xl mb-6">
+                <MapPin className="w-5 h-5 text-[#00B4D8] mt-0.5 flex-shrink-0" />
                 <div>
-                  <h3 className="font-semibold text-gray-800 mb-1">Location</h3>
-                  <p className="text-gray-600">{address}</p>
+                  <h3 className="font-bold text-xs uppercase tracking-wider text-[#0096B4] mb-0.5">Location</h3>
+                  <p className="text-xs text-slate-600">{address}</p>
                 </div>
               </div>
 
               {/* Description */}
               <div className="mb-8">
-                <h3 className="text-xl font-bold text-gray-900 mb-4">About</h3>
-                <p className="text-gray-600 leading-relaxed">{description}</p>
+                <h3 className="text-lg font-extrabold text-[#0A1628] font-jakarta mb-2">About</h3>
+                <p className="text-slate-600 text-sm leading-relaxed">{description}</p>
               </div>
             </div>
 
             {/* Tabs */}
             <div className="mb-8">
-              <div className="border-b border-gray-200">
+              <div className="border-b border-slate-200">
                 <nav className="flex flex-wrap gap-4 sm:gap-6">
                   {['overview', 'amenities', 'itinerary', 'community', 'reviews', 'location'].map((tab) => (
                     <button
                       key={tab}
                       onClick={() => setActiveTab(tab)}
-                      className={`py-3 px-1 font-medium capitalize border-b-2 transition-colors text-sm sm:text-base ${activeTab === tab
-                        ? 'border-blue-600 text-blue-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700'
+                      className={`py-3 px-1 font-bold capitalize border-b-2 transition-colors text-xs sm:text-sm cursor-pointer ${activeTab === tab
+                        ? 'border-[#00B4D8] text-[#00B4D8]'
+                        : 'border-transparent text-slate-500 hover:text-slate-800'
                         }`}
                     >
                       {tab}
@@ -344,19 +344,19 @@ const ViewDetails = () => {
                     <p className="text-gray-600 leading-relaxed mb-8">{description}</p>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="p-4 bg-blue-50 rounded-xl border border-blue-100">
-                        <h4 className="font-semibold text-blue-800 mb-2 flex items-center gap-2">
-                          <MapPin className="w-4 h-4" />
+                      <div className="p-4 bg-[#F0F9FF] rounded-xl border border-[#BAE6FD]/60">
+                        <h4 className="font-bold text-xs uppercase tracking-wider text-[#0096B4] mb-1 flex items-center gap-1.5">
+                          <MapPin className="w-3.5 h-3.5" />
                           Exact Location
                         </h4>
-                        <p className="text-sm text-gray-600">{address}</p>
+                        <p className="text-xs text-slate-600">{address}</p>
                       </div>
-                      <div className="p-4 bg-purple-50 rounded-xl border border-purple-100">
-                        <h4 className="font-semibold text-purple-800 mb-2 flex items-center gap-2">
-                          <DollarSign className="w-4 h-4" />
+                      <div className="p-4 bg-amber-50/60 rounded-xl border border-amber-200/60">
+                        <h4 className="font-bold text-xs uppercase tracking-wider text-amber-700 mb-1 flex items-center gap-1.5">
+                          <DollarSign className="w-3.5 h-3.5" />
                           Pricing
                         </h4>
-                        <p className="text-sm text-gray-600">{price}</p>
+                        <p className="text-xs text-slate-600">{price}</p>
                       </div>
                     </div>
                   </div>
@@ -364,14 +364,14 @@ const ViewDetails = () => {
 
                 {activeTab === 'amenities' && (
                   <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
-                    <h3 className="text-2xl font-bold text-gray-900 mb-6">
+                    <h3 className="text-xl font-extrabold text-[#0A1628] font-jakarta mb-4">
                       {isHotel ? 'Amenities & Services' : 'Features & Facilities'}
                     </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {(isHotel ? ['Free WiFi', 'Swimming Pool', 'Spa', 'Parking', 'Restaurant', '24/7 Room Service'] : ['Guided Tours', 'Photography', 'Wheelchair Ready', 'Restrooms', 'Food Court', 'Parking']).map((amenity, idx) => (
-                        <div key={idx} className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors border border-gray-100">
-                          <CheckCircle className="w-5 h-5 text-green-500" />
-                          <span className="text-gray-700 font-medium">{amenity}</span>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {(isHotel ? ['Free High-Speed WiFi', 'Scenic Lounge', 'Spa Wellness', 'Parking Facilities', 'Restaurant', 'Concierge Service'] : ['Guided Tour Access', 'Photography Vantage', 'Accessible Route', 'Restrooms', 'Local Refreshments', 'Parking']).map((amenity, idx) => (
+                        <div key={idx} className="flex items-center gap-2.5 p-3.5 bg-white rounded-xl border border-slate-200/80 shadow-xs">
+                          <CheckCircle className="w-4 h-4 text-emerald-500" />
+                          <span className="text-xs font-bold text-[#0A1628]">{amenity}</span>
                         </div>
                       ))}
                     </div>
@@ -382,16 +382,16 @@ const ViewDetails = () => {
                   <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
                     {tripData?.tripData?.itinerary ? (
                       <div>
-                        <div className="flex items-center gap-3 mb-6">
-                          <Calendar className="w-6 h-6 text-blue-600" />
-                          <h3 className="text-2xl font-bold text-gray-900">Full Trip Itinerary</h3>
+                        <div className="flex items-center gap-2 mb-4">
+                          <Calendar className="w-5 h-5 text-[#00B4D8]" />
+                          <h3 className="text-xl font-extrabold text-[#0A1628] font-jakarta">Full Trip Itinerary</h3>
                         </div>
                         <ItinerarySection itinerary={tripData.tripData.itinerary} />
                       </div>
                     ) : (
-                      <div className="text-center py-10 bg-gray-50 rounded-2xl border border-dashed border-gray-300">
-                        <Clock className="w-10 h-10 text-gray-400 mx-auto mb-2" />
-                        <p className="text-gray-500">No itinerary data available for this trip yet.</p>
+                      <div className="text-center py-10 bg-white rounded-2xl border border-dashed border-slate-200">
+                        <Clock className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                        <p className="text-xs text-slate-400">No itinerary data available for this trip yet.</p>
                       </div>
                     )}
                   </div>
@@ -399,29 +399,29 @@ const ViewDetails = () => {
 
                 {activeTab === 'community' && (
                   <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
-                    <div className="flex items-center justify-between mb-8">
+                    <div className="flex items-center justify-between mb-6">
                       <div>
-                        <h3 className="text-2xl font-bold text-gray-900 mb-2 flex items-center gap-2">
-                          <Users className="w-6 h-6 text-blue-600" />
+                        <h3 className="text-xl font-extrabold text-[#0A1628] font-jakarta mb-1 flex items-center gap-2">
+                          <Users className="w-5 h-5 text-[#00B4D8]" />
                           Travel Community
                         </h3>
-                        <p className="text-gray-600">Meet the travelers who are part of this journey</p>
+                        <p className="text-xs text-slate-500">Meet the travelers who are part of this journey</p>
                       </div>
-                      <div className="bg-blue-600 text-white px-4 py-2 rounded-full font-bold shadow-lg">
+                      <div className="bg-[#00B4D8] text-white px-3.5 py-1.5 rounded-full text-xs font-bold shadow-xs">
                         {members.length} Members
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                       {members.length > 0 ? (
                         members.map((member, idx) => (
-                          <div key={idx} className="flex items-center gap-4 p-4 bg-white border border-gray-100 rounded-2xl hover:shadow-md transition-all group">
-                            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-sm group-hover:scale-110 transition-transform">
+                          <div key={idx} className="flex items-center gap-3 p-3.5 bg-white border border-slate-200/80 rounded-xl shadow-xs group">
+                            <div className="w-10 h-10 bg-[#E0F2FE] text-[#0096B4] rounded-full flex items-center justify-center font-bold text-xs uppercase">
                               {member.userId?.username?.[0]?.toUpperCase() || 'U'}
                             </div>
                             <div>
-                              <h4 className="font-bold text-gray-800">{member.userId?.username || 'Traveler'}</h4>
-                              <p className="text-xs text-green-600 font-semibold uppercase tracking-wider">Approved Member</p>
+                              <h4 className="font-bold text-xs text-[#0A1628]">{member.userId?.username || 'Traveler'}</h4>
+                              <p className="text-[10px] text-emerald-600 font-bold uppercase tracking-wider">Approved Member</p>
                             </div>
                           </div>
                         ))
@@ -524,9 +524,9 @@ const ViewDetails = () => {
                 {bookingStatus === 'none' && (
                   <button
                     onClick={handleJoinTrip}
-                    className="w-full py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-300 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+                    className="w-full py-3.5 bg-[#00B4D8] hover:bg-[#0096B4] text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-[#00B4D8]/20 flex items-center justify-center gap-2 cursor-pointer"
                   >
-                    <Users className="w-5 h-5" />
+                    <Users className="w-4 h-4" />
                     Request to Join Trip
                   </button>
                 )}
@@ -534,27 +534,27 @@ const ViewDetails = () => {
                 {bookingStatus === 'pending' && (
                   <button
                     disabled
-                    className="w-full py-4 bg-yellow-100 text-yellow-800 font-bold rounded-xl cursor-not-allowed flex items-center justify-center gap-2 border border-yellow-200"
+                    className="w-full py-3.5 bg-amber-50 text-amber-700 text-xs font-bold rounded-xl cursor-not-allowed flex items-center justify-center gap-2 border border-amber-200"
                   >
-                    <Clock className="w-5 h-5" />
-                    Pending Admin Validation
+                    <Clock className="w-4 h-4" />
+                    Pending Validation
                   </button>
                 )}
 
                 {bookingStatus === 'approved' && (
-                  <div className="space-y-3">
+                  <div className="space-y-2.5">
                     <button
                       disabled
-                      className="w-full py-4 bg-green-100 text-green-800 font-bold rounded-xl cursor-default flex items-center justify-center gap-2"
+                      className="w-full py-3 bg-emerald-50 text-emerald-700 text-xs font-bold rounded-xl cursor-default flex items-center justify-center gap-2 border border-emerald-200"
                     >
-                      <Users className="w-5 h-5" />
+                      <Users className="w-4 h-4" />
                       Join Request Approved
                     </button>
                     <button
                       onClick={() => navigate('/chat', { state: { tripId } })}
-                      className="w-full py-4 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-200"
+                      className="w-full py-3 bg-[#00B4D8] hover:bg-[#0096B4] text-white text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer"
                     >
-                      <MessageSquare className="w-5 h-5" />
+                      <MessageSquare className="w-4 h-4" />
                       Enter Group Chat
                     </button>
                   </div>
@@ -563,9 +563,9 @@ const ViewDetails = () => {
                 {(tripData?.userId === user?.id || tripData?.userId?._id === user?.id) && (
                   <button
                     onClick={() => navigate('/chat', { state: { tripId } })}
-                    className="w-full py-4 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-200"
+                    className="w-full py-3 bg-[#0A1628] hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer"
                   >
-                    <MessageSquare className="w-5 h-5" />
+                    <MessageSquare className="w-4 h-4" />
                     Trip Chat (Organiser)
                   </button>
                 )}

@@ -10,6 +10,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import session from "express-session";
 import MongoStore from "connect-mongo";
+import fs from "fs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -41,9 +42,35 @@ if (!process.env.SESSION_SECRET) {
     process.env.SESSION_SECRET = SESSION_SECRET;
 }
 
+// Allowed Origins for CORS & Socket.IO
+const allowedOrigins = [
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "http://localhost:5175",
+    "http://localhost:3000",
+    process.env.CLIENT_URL,
+    process.env.FRONTEND_URL,
+    ...(process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',').map(s => s.trim()) : [])
+].filter(Boolean);
+
+const corsOriginHandler = (origin, callback) => {
+    // Allow server-to-server or tools without origin (like Postman, curl, or health checks)
+    if (!origin) return callback(null, true);
+
+    const isExplicitlyAllowed = allowedOrigins.includes(origin);
+    const isVercel = origin.endsWith(".vercel.app");
+
+    if (isExplicitlyAllowed || isVercel || process.env.NODE_ENV !== "production") {
+        return callback(null, true);
+    }
+
+    console.warn(`[CORS] Blocked request from origin: ${origin}`);
+    return callback(new Error(`Not allowed by CORS: ${origin}`));
+};
+
 const io = new Server(httpServer, {
     cors: {
-        origin: ["http://localhost:5173", "http://localhost:5174", "http://localhost:5175", "http://localhost:3000"], // Explicit origins for credentials
+        origin: corsOriginHandler,
         credentials: true,
         methods: ["GET", "POST"]
     }
@@ -57,7 +84,7 @@ app.use(express.json());
 
 // CORS Configuration for Sessions
 app.use(cors({
-    origin: ["http://localhost:5173", "http://localhost:5174", "http://localhost:5175", "http://localhost:3000"], // Match your frontend URL
+    origin: corsOriginHandler,
     credentials: true
 }));
 
@@ -255,14 +282,34 @@ mongoose.connect(process.env.MONGO_URI)
     })
     .catch((err) => console.error("❌ MongoDB Connection Error:", err));
 
-// Serve Static files in Production
-const buildPath = path.join(__dirname, "../client/dist");
-app.use(express.static(buildPath));
-
-// Standard SPA Catch-All
-app.get("*", (req, res) => {
-    res.sendFile(path.join(buildPath, "index.html"));
+// Health check endpoint for monitoring & Render keep-alive
+app.get("/health", (req, res) => {
+    res.status(200).json({
+        status: "ok",
+        uptime: process.uptime(),
+        timestamp: new Date().toISOString()
+    });
 });
+
+// Serve Static files in Production if client build exists (monolithic mode)
+const buildPath = path.join(__dirname, "../client/dist");
+if (fs.existsSync(path.join(buildPath, "index.html"))) {
+    app.use(express.static(buildPath));
+    app.get("*", (req, res) => {
+        res.sendFile(path.join(buildPath, "index.html"));
+    });
+} else {
+    // Split Deployment Mode (Render Backend API + Vercel Frontend)
+    app.get("/", (req, res) => {
+        res.status(200).json({
+            status: "online",
+            service: "Pathora Backend API",
+            message: "Pathora Backend is running successfully ✅",
+            health: "/health",
+            timestamp: new Date().toISOString()
+        });
+    });
+}
 
 // Start Server
 httpServer.listen(PORT, () => {

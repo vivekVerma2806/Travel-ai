@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapPin } from 'lucide-react';
+import { MapPin, Calendar, Users, ArrowRight } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../ui/toast';
 import api from '../../service/api';
@@ -11,15 +11,20 @@ const UserTripCard = ({ trip, isJoined, bookingStatus }) => {
     const toast = useToast();
     const [joining, setJoining] = React.useState(false);
 
-    const [imgSrc, setImgSrc] = React.useState(
-        trip.tripData?.locationInfo?.photoUrl ||
-        trip.tripData?.hotels?.[0]?.imageUrl ||
-        'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=800'
-    );
-
-    const handleImageError = () => {
-        setImgSrc('https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=800');
+    const getInitialImage = () => {
+        const dest = (trip.destination || "").toLowerCase();
+        if (dest.includes("kyoto")) return "/assets/pathora/destinations/kyoto-banner.jpg";
+        if (dest.includes("bali")) return "/assets/pathora/destinations/bali.jpg";
+        if (dest.includes("paris")) return "/assets/pathora/destinations/paris.jpg";
+        if (dest.includes("tokyo")) return "/assets/pathora/destinations/tokyo.jpg";
+        if (dest.includes("santorini")) return "/assets/pathora/destinations/santorini.jpg";
+        if (dest.includes("new york") || dest.includes("york")) return "/assets/pathora/destinations/newyork.jpg";
+        return trip.tripData?.locationInfo?.photoUrl ||
+               trip.tripData?.hotels?.[0]?.imageUrl ||
+               "/assets/pathora/destinations/kyoto-banner.jpg";
     };
+
+    const [imgSrc, setImgSrc] = React.useState(getInitialImage());
 
     const handleJoinClick = async (e) => {
         e.preventDefault();
@@ -51,67 +56,65 @@ const UserTripCard = ({ trip, isJoined, bookingStatus }) => {
     return (
         <div
             onClick={() => navigate(`/view-trip/${trip._id}`)}
-            className='border rounded-2xl p-4 hover:shadow-xl transition-all cursor-pointer h-full flex flex-col bg-white group border-gray-100 shadow-sm relative overflow-hidden'
+            className="border rounded-2xl p-4 hover:shadow-md hover:border-[#00B4D8]/50 transition-all cursor-pointer h-full flex flex-col bg-white border-slate-200 shadow-xs relative overflow-hidden group"
         >
-            <div className="relative h-[200px] w-full mb-4 overflow-hidden rounded-xl">
+            <div className="relative h-48 w-full mb-3.5 overflow-hidden rounded-xl bg-slate-100">
                 <img
                     src={imgSrc}
                     alt={trip.destination}
-                    className='h-full w-full object-cover transition-transform duration-700 group-hover:scale-110'
-                    onError={handleImageError}
+                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    onError={() => setImgSrc("/assets/pathora/destinations/kyoto-banner.jpg")}
                 />
-                <div className="absolute top-2 right-2 px-2.5 py-1 bg-white/90 backdrop-blur-md rounded-lg text-[10px] font-bold shadow-sm uppercase tracking-wider text-gray-700">
+                <div className="absolute top-2.5 right-2.5 px-2.5 py-1 bg-white/95 backdrop-blur-md rounded-lg text-[10px] font-bold shadow-xs uppercase tracking-wider text-slate-700">
                     {trip.duration || trip.tripData?.duration || 3} Days
                 </div>
 
-                {/* Status Badge */}
                 {trip.status === 'approved' && (
-                    <div className="absolute bottom-2 left-2 px-2 py-1 bg-green-500/90 backdrop-blur-md rounded text-[8px] font-bold text-white uppercase tracking-widest">
+                    <div className="absolute bottom-2.5 left-2.5 px-2 py-0.5 bg-emerald-600/90 backdrop-blur-md rounded-md text-[9px] font-bold text-white uppercase tracking-wider">
                         Verified
                     </div>
                 )}
             </div>
 
-            <div className='flex justify-between items-start mb-2'>
-                <h2 className='font-bold text-lg truncate flex-1 text-gray-800'>
-                    {trip.tripData?.hotels?.[0]?.hotelName || trip.destination || 'Unnamed Trip'}
-                </h2>
+            <div className="flex justify-between items-start mb-1">
+                <h3 className="font-bold text-base text-[#0A1628] truncate flex-1 font-jakarta group-hover:text-[#00B4D8] transition-colors">
+                    {trip.tripData?.hotels?.[0]?.hotelName || trip.destination || 'Pathora Journey'}
+                </h3>
             </div>
 
-            <p className='text-sm text-gray-500 flex items-center gap-1 mb-4'>
-                <MapPin className='w-3 h-3 text-blue-500' /> {trip.destination}
+            <p className="text-xs text-slate-500 flex items-center gap-1 mb-3">
+                <MapPin className="w-3.5 h-3.5 text-[#00B4D8]" /> {trip.destination}
             </p>
 
-            <div className="flex items-center justify-between mt-auto pt-4 border-t border-gray-50 gap-3">
-                <div className='flex flex-col'>
-                    <span className='text-[10px] text-gray-400 font-bold uppercase tracking-tighter'>Budget</span>
-                    <span className='font-bold text-blue-600 text-sm'>
-                        {trip.budget || trip.tripData?.budget || 'Medium'}
+            <div className="flex items-center justify-between mt-auto pt-3 border-t border-slate-100 gap-3">
+                <div className="flex flex-col">
+                    <span className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Budget</span>
+                    <span className="font-bold text-[#0A1628] text-xs">
+                        {trip.budget || trip.tripData?.budget || 'Moderate'}
                     </span>
                 </div>
 
                 {(trip.userId !== user?.id && trip.userId?._id !== user?.id) ? (
                     <button
+                        type="button"
                         onClick={handleJoinClick}
                         disabled={joining || isJoined}
-                        className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all active:scale-95 disabled:opacity-90 flex items-center justify-center gap-1 shadow-md
-                            ${isJoined
-                                ? 'bg-emerald-500 text-white shadow-emerald-100 cursor-default'
-                                : 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-blue-100 hover:shadow-lg'}`}
+                        className={`py-2 px-3.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-xs ${
+                            isJoined
+                                ? 'bg-emerald-600 text-white cursor-default'
+                                : 'bg-[#00B4D8] hover:bg-[#0096B4] text-white shadow-[#00B4D8]/20'
+                        }`}
                     >
                         {joining ? (
-                            <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                            <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
                         ) : isJoined ? (
-                            <div className='flex items-center gap-1'>
-                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" /></svg>
-                                {bookingStatus === 'approved' ? 'Joined' : 'Requested'}
-                            </div>
+                            <span>{bookingStatus === 'approved' ? 'Joined' : 'Requested'}</span>
                         ) : (
-                            'Join Trip'
+                            <span>Request to Join</span>
                         )}
                     </button>
                 ) : (
-                    <div className="flex-1 py-2 bg-blue-50 text-blue-600 rounded-lg text-[10px] font-bold text-center border border-blue-100 uppercase tracking-wider">
+                    <div className="py-1.5 px-3 bg-slate-100 text-slate-700 rounded-lg text-[10px] font-bold text-center border border-slate-200 uppercase tracking-wider">
                         Your Trip
                     </div>
                 )}

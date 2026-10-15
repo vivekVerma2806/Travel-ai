@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" fill="none" class="w-full h-full">
+  <defs>
+    <linearGradient id="notifGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00E5FF"/>
+      <stop offset="100%" stop-color="#00B4D8"/>
+    </linearGradient>
+  </defs>
+  <circle cx="200" cy="150" r="110" fill="#F0F9FF" opacity="0.8"/>
+  <!-- Bell -->
+  <g transform="translate(160, 85)">
+    <path d="M40 10 C26 10 15 21 15 35 L15 65 L5 80 L75 80 L65 65 L65 35 C65 21 54 10 40 10 Z" fill="url(#notifGrad)"/>
+    <!-- Clapper -->
+    <path d="M32 85 C32 89.4 35.6 93 40 93 C44.4 93 48 89.4 48 85 Z" fill="#0A1628"/>
+    <!-- Top hanger -->
+    <circle cx="40" cy="8" r="5" stroke="url(#notifGrad)" stroke-width="3" fill="none"/>
+    <!-- Gentle sparkle -->
+    <circle cx="78" cy="22" r="4" fill="#FF8C42"/>
+    <path d="M78 12 L78 32 M68 22 L88 22" stroke="#FF8C42" stroke-width="2" stroke-linecap="round"/>
+  </g>
+  <!-- Base ripple rings -->
+  <ellipse cx="200" cy="225" rx="60" ry="12" fill="#E0F2FE"/>
+</svg>

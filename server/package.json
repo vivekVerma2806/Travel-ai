@@ -1,12 +1,13 @@
 {
     "name": "travel-ai-server",
     "version": "1.0.0",
-    "description": "Backend for TravelAI",
+    "description": "Backend API for Pathora — AI-powered travel planning platform",
     "main": "index.js",
     "type": "module",
     "scripts": {
         "start": "node index.js",
-        "dev": "nodemon index.js"
+        "dev": "nodemon index.js",
+        "seed": "node seed.js"
     },
     "dependencies": {
         "bcryptjs": "^2.4.3",

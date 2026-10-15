@@ -20,6 +20,7 @@ import Register from "./pages/Register.jsx";
 import AdminDashboard from "./pages/AdminDashboard.jsx";
 import OrganiserDashboard from "./pages/OrganiserDashboard.jsx";
 import Profile from "./pages/Profile.jsx";
+import NotFound from "./pages/NotFound.jsx";
 
 const router = createBrowserRouter([
   {
@@ -42,10 +43,9 @@ const router = createBrowserRouter([
       { path: "/admin", element: <AdminDashboard /> },
       { path: "/organiser", element: <OrganiserDashboard /> },
 
-
       { path: "/about", element: <About /> },
       { path: "/contact", element: <Contact /> },
-      { path: "*", element: <div>Page not found</div> },
+      { path: "*", element: <NotFound /> },
     ]
   }
 ]);

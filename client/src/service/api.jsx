@@ -1,8 +1,29 @@
 import axios from "axios";
 
-const isProd = import.meta.env.PROD;
+// Determine backend origin URL for Socket.IO and server resources
+export const getBackendUrl = () => {
+    if (import.meta.env.VITE_BACKEND_URL) {
+        return import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "");
+    }
+    return import.meta.env.PROD ? window.location.origin : "http://localhost:5001";
+};
+
+// Determine API Base URL:
+// 1. VITE_API_URL if explicitly specified (e.g., https://your-backend.onrender.com/api)
+// 2. VITE_BACKEND_URL with /api appended
+// 3. Fallback to /api in production (for monolithic deployments) or localhost in dev
+export const getApiBaseUrl = () => {
+    if (import.meta.env.VITE_API_URL) {
+        return import.meta.env.VITE_API_URL.replace(/\/$/, "");
+    }
+    if (import.meta.env.VITE_BACKEND_URL) {
+        return `${import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "")}/api`;
+    }
+    return import.meta.env.PROD ? "/api" : "http://localhost:5001/api";
+};
+
 const api = axios.create({
-    baseURL: isProd ? "/api" : "http://localhost:5001/api",
+    baseURL: getApiBaseUrl(),
     withCredentials: true, // Enable cookies for session
 });
 

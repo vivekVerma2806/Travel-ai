@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
-import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
-import { Loader2, CheckCircle, XCircle, Map, Users, Trash2 } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, Map, Users, Trash2, ShieldAlert, Sparkles, Filter } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import api from '../service/api';
 
@@ -36,7 +35,7 @@ const AdminDashboard = () => {
                 setTrips(res.data);
             }
         } catch (err) {
-            console.error("Failed to fetch data", err);
+            console.error("Failed to fetch admin data", err);
         } finally {
             setLoading(false);
         }
@@ -52,17 +51,15 @@ const AdminDashboard = () => {
     };
 
     const handleUserDelete = async (id) => {
-        if (!window.confirm("Are you sure you want to delete this user? This action cannot be undone and will remove all their data.")) return;
+        if (!window.confirm("Permanently delete this user? This will remove all their data.")) return;
         try {
             await api.delete(`/users/${id}`);
-            // Instantly update UI for better UX
             setUsers(prev => prev.filter(u => u._id !== id));
-            // Also fetch again in background to ensure everything is synced
             fetchData();
         } catch (err) {
             console.error("User deletion failed", err);
             alert("Failed to delete user: " + (err.response?.data?.message || err.message));
-            fetchData(); // Refresh list on error to ensure correct state
+            fetchData();
         }
     };
 
@@ -94,225 +91,253 @@ const AdminDashboard = () => {
     };
 
     const handleTripDelete = async (id) => {
-        if (!window.confirm("Are you sure you want to permanently delete this trip request? All members will lose access.")) return;
+        if (!window.confirm("Permanently delete this journey?")) return;
         try {
             await api.delete(`/trips/${id}`);
             setTrips(prev => prev.filter(t => t._id !== id));
             fetchData();
         } catch (err) {
             console.error("Trip deletion failed", err);
-            alert("Failed to delete trip: " + (err.response?.data?.message || err.message));
+            alert("Failed to delete journey.");
             fetchData();
         }
     };
 
     const handleBookingDelete = async (id) => {
-        if (!window.confirm("Are you sure you want to delete this join request?")) return;
+        if (!window.confirm("Delete this join request?")) return;
         try {
             await api.delete(`/bookings/admin/${id}`);
             setBookings(prev => prev.filter(b => b._id !== id));
             fetchData();
         } catch (err) {
             console.error("Booking deletion failed", err);
-            alert("Failed to delete request: " + (err.response?.data?.message || err.message));
+            alert("Failed to delete request.");
             fetchData();
         }
     };
 
-    if (loading && users.length === 0 && trips.length === 0 && bookings.length === 0) {
-        return (
-            <div className="flex justify-center items-center h-screen">
-                <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-            </div>
-        );
-    }
-
     return (
-        <div className="p-5 sm:p-10 md:px-20 min-h-screen bg-gray-50">
-            <h1 className="font-bold text-3xl mb-8 text-gray-800">Admin Dashboard</h1>
+        <div className="min-h-screen bg-[#F8FAFC] py-10 px-4 sm:px-6 lg:px-8">
+            <div className="max-w-7xl mx-auto space-y-6">
 
-            {/* Tabs */}
-            <div className="flex space-x-4 mb-6">
-                <button
-                    onClick={() => setActiveTab('users')}
-                    className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all ${activeTab === 'users'
-                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-200'
-                        : 'bg-white text-gray-600 hover:bg-gray-100'}`}
-                >
-                    <Users className="w-5 h-5" /> Users
-                </button>
-                <button
-                    onClick={() => setActiveTab('bookings')}
-                    className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all ${activeTab === 'bookings'
-                        ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-200'
-                        : 'bg-white text-gray-600 hover:bg-gray-100'}`}
-                >
-                    <CheckCircle className="w-5 h-5" /> Join Requests
-                </button>
-                <button
-                    onClick={() => setActiveTab('trips')}
-                    className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all ${activeTab === 'trips'
-                        ? 'bg-purple-600 text-white shadow-lg shadow-purple-200'
-                        : 'bg-white text-gray-600 hover:bg-gray-100'}`}
-                >
-                    <Map className="w-5 h-5" /> Trip Requests
-                </button>
-            </div>
+                {/* Header */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <span className="text-xs font-bold uppercase tracking-wider text-rose-600">
+                            Superadmin Operations
+                        </span>
+                        <h1 className="text-2xl sm:text-3xl font-extrabold text-[#0A1628] font-jakarta mt-0.5">
+                            Pathora Management Console
+                        </h1>
+                    </div>
 
-            {/* Content Area */}
-            <div className="bg-white shadow-lg rounded-xl overflow-hidden border border-gray-100">
-                <div className="overflow-x-auto">
-                    <table className="min-w-full leading-normal">
-                        <thead>
-                            <tr>
-                                {activeTab === 'users' ? (
-                                    <>
-                                        <th className="px-5 py-4 bg-gray-50 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Username</th>
-                                        <th className="px-5 py-4 bg-gray-50 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Email</th>
-                                        <th className="px-5 py-4 bg-gray-50 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Role</th>
-                                        <th className="px-5 py-4 bg-gray-50 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
-                                    </>
-                                ) : activeTab === 'bookings' ? (
-                                    <>
-                                        <th className="px-5 py-4 bg-gray-50 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Destination</th>
-                                        <th className="px-5 py-4 bg-gray-50 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">User</th>
-                                        <th className="px-5 py-4 bg-gray-50 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
-                                    </>
-                                ) : (
-                                    <>
-                                        <th className="px-5 py-4 bg-gray-50 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Destination</th>
-                                        <th className="px-5 py-4 bg-gray-50 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Creator</th>
-                                        <th className="px-5 py-4 bg-gray-50 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Organiser Req</th>
-                                        <th className="px-5 py-4 bg-gray-50 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
-                                    </>
-                                )}
-                                <th className="px-5 py-4 bg-gray-50 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {activeTab === 'users' ? users.map((u) => (
-                                <tr key={u._id} className="hover:bg-gray-50 transition-colors">
-                                    <td className="px-5 py-5 border-b border-gray-100 text-sm font-medium text-gray-900">{u.username}</td>
-                                    <td className="px-5 py-5 border-b border-gray-100 text-sm text-gray-600">{u.email}</td>
-                                    <td className="px-5 py-5 border-b border-gray-100 text-sm">
-                                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${u.role === 'admin' ? 'bg-red-100 text-red-600' : u.role === 'organiser' ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-600'}`}>
-                                            {u.role}
-                                        </span>
-                                    </td>
-                                    <td className="px-5 py-5 border-b border-gray-100 text-sm">
-                                        <span className={`px-3 py-1 rounded-full text-xs font-bold ${u.isVerified ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                                            {u.isVerified ? 'Verified' : 'Pending'}
-                                        </span>
-                                    </td>
-                                    <td className="px-5 py-5 border-b border-gray-100 text-sm">
-                                        <div className="flex items-center gap-2">
-                                            {!u.isVerified ? (
-                                                <button onClick={() => handleUserAction(u._id, 'verify')} className="text-green-600 hover:text-green-800 flex items-center gap-1 font-semibold">
-                                                    <CheckCircle className="w-4 h-4" /> Approve
-                                                </button>
-                                            ) : (
-                                                <button onClick={() => handleUserAction(u._id, 'revoke')} className="text-yellow-600 hover:text-yellow-800 flex items-center gap-1 font-semibold">
-                                                    <XCircle className="w-4 h-4" /> Revoke
-                                                </button>
-                                            )}
-                                            <button onClick={() => handleUserDelete(u._id)} className="text-red-600 hover:text-red-800 flex items-center gap-1 font-semibold ml-2">
-                                                <Trash2 className="w-4 h-4" /> Delete
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            )) : activeTab === 'bookings' ? bookings.map((b) => (
-                                <tr key={b._id} className="hover:bg-gray-50 transition-colors">
-                                    <td className="px-5 py-5 border-b border-gray-100 text-sm font-medium text-gray-900">
-                                        <div className="flex items-center gap-3">
-                                            {b.hotelImage && (
-                                                <img src={b.hotelImage} alt={b.hotelName} className="w-10 h-10 rounded-lg object-cover" />
-                                            )}
-                                            <div>
-                                                <div>{b.hotelName || b.destination}</div>
-                                                {b.hotelName && <div className="text-xs text-gray-500">{b.destination}</div>}
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td className="px-5 py-5 border-b border-gray-100 text-sm text-gray-600">
-                                        <div>{b.userId?.username || 'Unknown'}</div>
-                                        <div className="text-xs text-gray-400">{b.userId?.email}</div>
-                                    </td>
-                                    <td className="px-5 py-5 border-b border-gray-100 text-sm">
-                                        <span className={`px-3 py-1 rounded-full text-xs font-bold ${b.status === 'approved' ? 'bg-green-100 text-green-700' :
-                                            b.status === 'rejected' ? 'bg-red-100 text-red-700' :
-                                                'bg-yellow-100 text-yellow-700'
-                                            }`}>
-                                            {b.status || 'pending'}
-                                        </span>
-                                    </td>
-                                    <td className="px-5 py-5 border-b border-gray-100 text-sm">
-                                        <div className="flex gap-3">
-                                            <button onClick={() => handleBookingValidate(b._id, 'approved')} className="text-green-600 hover:text-green-800 flex items-center gap-1 font-semibold">
-                                                <CheckCircle className="w-4 h-4" /> Approve
-                                            </button>
-                                            <button onClick={() => handleBookingValidate(b._id, 'rejected')} className="text-red-500 hover:text-red-700 flex items-center gap-1 font-semibold">
-                                                <XCircle className="w-4 h-4" /> Reject
-                                            </button>
-                                            <button onClick={() => handleBookingDelete(b._id)} className="text-gray-400 hover:text-red-600 flex items-center gap-1 font-semibold ml-2">
-                                                <Trash2 className="w-4 h-4" />
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            )) : trips.map((t) => (
-                                <tr key={t._id} className="hover:bg-gray-50 transition-colors">
-                                    <td className="px-5 py-5 border-b border-gray-100 text-sm font-medium text-gray-900">{t.destination}</td>
-                                    <td className="px-5 py-5 border-b border-gray-100 text-sm text-gray-600">{t.userId?.username || 'Unknown'}</td>
-                                    <td className="px-5 py-5 border-b border-gray-100 text-sm">
-                                        {t.requestOrganiser ? (
-                                            <div className="flex flex-col gap-1">
-                                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase w-fit ${t.organiserStatus === 'approved' ? 'bg-blue-100 text-blue-700' :
-                                                    t.organiserStatus === 'rejected' ? 'bg-red-100 text-red-700' : 'bg-orange-100 text-orange-700'
-                                                    }`}>
-                                                    {t.organiserStatus}
-                                                </span>
-                                                {t.organiserStatus === 'pending' && (
-                                                    <div className="flex gap-2 mt-1">
-                                                        <button onClick={() => handleOrganiserStatus(t._id, 'approved')} className="text-[10px] font-bold text-blue-600 hover:underline">Verify</button>
-                                                        <button onClick={() => handleOrganiserStatus(t._id, 'rejected')} className="text-[10px] font-bold text-red-600 hover:underline">Deny</button>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        ) : (
-                                            <span className="text-gray-400 italic text-xs">No</span>
-                                        )}
-                                    </td>
-                                    <td className="px-5 py-5 border-b border-gray-100 text-sm">
-                                        <span className={`px-3 py-1 rounded-full text-xs font-bold ${t.status === 'approved' ? 'bg-green-100 text-green-700' :
-                                            t.status === 'rejected' ? 'bg-red-100 text-red-700' :
-                                                'bg-yellow-100 text-yellow-700'
-                                            }`}>
-                                            {t.status || 'pending'}
-                                        </span>
-                                    </td>
-                                    <td className="px-5 py-5 border-b border-gray-100 text-sm">
-                                        <div className="flex gap-3">
-                                            {t.status !== 'approved' && (
-                                                <button onClick={() => handleTripStatus(t._id, 'approved')} className="text-green-600 hover:text-green-800 flex items-center gap-1 font-semibold">
-                                                    <CheckCircle className="w-4 h-4" /> Approve
-                                                </button>
-                                            )}
-                                            {t.status !== 'rejected' && (
-                                                <button onClick={() => handleTripStatus(t._id, 'rejected')} className="text-red-500 hover:text-red-700 flex items-center gap-1 font-semibold">
-                                                    <XCircle className="w-4 h-4" /> Reject
-                                                </button>
-                                            )}
-                                            <button onClick={() => handleTripDelete(t._id)} className="text-gray-400 hover:text-red-600 flex items-center gap-1 font-semibold ml-2">
-                                                <Trash2 className="w-4 h-4" />
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                    <div className="flex items-center gap-2">
+                        <span className="px-3 py-1 bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold rounded-lg flex items-center gap-1.5">
+                            <ShieldAlert className="w-3.5 h-3.5" />
+                            Admin Access: {user.username || user.email}
+                        </span>
+                    </div>
                 </div>
+
+                {/* Navigation Tabs */}
+                <div className="flex items-center gap-2 p-1 bg-white border border-slate-200 rounded-xl shadow-xs w-fit">
+                    <button
+                        onClick={() => setActiveTab('users')}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                            activeTab === 'users'
+                                ? 'bg-[#00B4D8] text-white shadow-xs'
+                                : 'text-slate-600 hover:text-slate-900'
+                        }`}
+                    >
+                        <Users className="w-4 h-4" />
+                        <span>Platform Users ({users.length})</span>
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('bookings')}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                            activeTab === 'bookings'
+                                ? 'bg-[#00B4D8] text-white shadow-xs'
+                                : 'text-slate-600 hover:text-slate-900'
+                        }`}
+                    >
+                        <CheckCircle className="w-4 h-4" />
+                        <span>Join Requests ({bookings.length})</span>
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('trips')}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                            activeTab === 'trips'
+                                ? 'bg-[#00B4D8] text-white shadow-xs'
+                                : 'text-slate-600 hover:text-slate-900'
+                        }`}
+                    >
+                        <Map className="w-4 h-4" />
+                        <span>Journey Moderation ({trips.length})</span>
+                    </button>
+                </div>
+
+                {/* Table Card */}
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+                    {loading ? (
+                        <div className="flex flex-col items-center justify-center py-20 gap-3">
+                            <div className="w-8 h-8 border-3 border-[#00B4D8] border-t-transparent rounded-full animate-spin" />
+                            <p className="text-xs font-semibold text-slate-500">Loading records...</p>
+                        </div>
+                    ) : (
+                        <div className="overflow-x-auto">
+                            <table className="min-w-full text-left text-xs">
+                                <thead>
+                                    <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase font-bold tracking-wider">
+                                        {activeTab === 'users' ? (
+                                            <>
+                                                <th className="px-6 py-3.5">User</th>
+                                                <th className="px-6 py-3.5">Email</th>
+                                                <th className="px-6 py-3.5">Role</th>
+                                                <th className="px-6 py-3.5">Status</th>
+                                                <th className="px-6 py-3.5 text-right">Actions</th>
+                                            </>
+                                        ) : activeTab === 'bookings' ? (
+                                            <>
+                                                <th className="px-6 py-3.5">Destination</th>
+                                                <th className="px-6 py-3.5">Traveler</th>
+                                                <th className="px-6 py-3.5">Status</th>
+                                                <th className="px-6 py-3.5 text-right">Actions</th>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <th className="px-6 py-3.5">Destination</th>
+                                                <th className="px-6 py-3.5">Creator</th>
+                                                <th className="px-6 py-3.5">Organiser Request</th>
+                                                <th className="px-6 py-3.5">Status</th>
+                                                <th className="px-6 py-3.5 text-right">Actions</th>
+                                            </>
+                                        )}
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                    {activeTab === 'users' ? users.map((u) => (
+                                        <tr key={u._id} className="hover:bg-slate-50/80 transition-colors">
+                                            <td className="px-6 py-4 font-bold text-slate-800">{u.username}</td>
+                                            <td className="px-6 py-4 text-slate-600">{u.email}</td>
+                                            <td className="px-6 py-4">
+                                                <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase ${
+                                                    u.role === 'admin' ? 'bg-rose-50 text-rose-700 border border-rose-200' :
+                                                    u.role === 'organiser' ? 'bg-cyan-50 text-cyan-700 border border-cyan-200' :
+                                                    'bg-slate-100 text-slate-700'
+                                                }`}>
+                                                    {u.role}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                                                    u.isVerified ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'
+                                                }`}>
+                                                    {u.isVerified ? 'Verified' : 'Pending'}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 text-right">
+                                                <div className="flex items-center justify-end gap-2">
+                                                    {!u.isVerified ? (
+                                                        <button onClick={() => handleUserAction(u._id, 'verify')} className="text-emerald-600 hover:text-emerald-800 font-bold">
+                                                            Approve
+                                                        </button>
+                                                    ) : (
+                                                        <button onClick={() => handleUserAction(u._id, 'revoke')} className="text-amber-600 hover:text-amber-800 font-bold">
+                                                            Revoke
+                                                        </button>
+                                                    )}
+                                                    <button onClick={() => handleUserDelete(u._id)} className="text-rose-500 hover:text-rose-700 ml-2" title="Delete User">
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    )) : activeTab === 'bookings' ? bookings.map((b) => (
+                                        <tr key={b._id} className="hover:bg-slate-50/80 transition-colors">
+                                            <td className="px-6 py-4 font-bold text-slate-800">
+                                                {b.hotelName || b.destination}
+                                            </td>
+                                            <td className="px-6 py-4 text-slate-600">
+                                                {b.userId?.username || 'Unknown'} ({b.userId?.email})
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                                                    b.status === 'approved' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+                                                    b.status === 'rejected' ? 'bg-rose-50 text-rose-700 border border-rose-200' :
+                                                    'bg-amber-50 text-amber-700 border border-amber-200'
+                                                }`}>
+                                                    {b.status || 'pending'}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 text-right">
+                                                <div className="flex items-center justify-end gap-3">
+                                                    <button onClick={() => handleBookingValidate(b._id, 'approved')} className="text-emerald-600 hover:text-emerald-800 font-bold">
+                                                        Approve
+                                                    </button>
+                                                    <button onClick={() => handleBookingValidate(b._id, 'rejected')} className="text-rose-600 hover:text-rose-800 font-bold">
+                                                        Reject
+                                                    </button>
+                                                    <button onClick={() => handleBookingDelete(b._id)} className="text-slate-400 hover:text-rose-600">
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    )) : trips.map((t) => (
+                                        <tr key={t._id} className="hover:bg-slate-50/80 transition-colors">
+                                            <td className="px-6 py-4 font-bold text-slate-800">{t.destination}</td>
+                                            <td className="px-6 py-4 text-slate-600">{t.userId?.username || 'Unknown'}</td>
+                                            <td className="px-6 py-4">
+                                                {t.requestOrganiser ? (
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-cyan-50 text-cyan-700 border border-cyan-200">
+                                                            {t.organiserStatus || 'pending'}
+                                                        </span>
+                                                        {t.organiserStatus === 'pending' && (
+                                                            <div className="flex gap-2">
+                                                                <button onClick={() => handleOrganiserStatus(t._id, 'approved')} className="text-[10px] font-bold text-emerald-600 hover:underline">Verify</button>
+                                                                <button onClick={() => handleOrganiserStatus(t._id, 'rejected')} className="text-[10px] font-bold text-rose-600 hover:underline">Deny</button>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ) : (
+                                                    <span className="text-slate-400 italic">No</span>
+                                                )}
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                                                    t.status === 'approved' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+                                                    t.status === 'rejected' ? 'bg-rose-50 text-rose-700 border border-rose-200' :
+                                                    'bg-amber-50 text-amber-700 border border-amber-200'
+                                                }`}>
+                                                    {t.status || 'pending'}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 text-right">
+                                                <div className="flex items-center justify-end gap-3">
+                                                    {t.status !== 'approved' && (
+                                                        <button onClick={() => handleTripStatus(t._id, 'approved')} className="text-emerald-600 hover:text-emerald-800 font-bold">
+                                                            Approve
+                                                        </button>
+                                                    )}
+                                                    {t.status !== 'rejected' && (
+                                                        <button onClick={() => handleTripStatus(t._id, 'rejected')} className="text-rose-600 hover:text-rose-800 font-bold">
+                                                            Reject
+                                                        </button>
+                                                    )}
+                                                    <button onClick={() => handleTripDelete(t._id)} className="text-slate-400 hover:text-rose-600">
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </div>
+
             </div>
         </div>
     );

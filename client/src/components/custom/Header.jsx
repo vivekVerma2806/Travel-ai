@@ -1,11 +1,10 @@
-
 import React, { useState, useEffect } from 'react'
 import { Button } from '../ui/button'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
-import { LogOut, User } from 'lucide-react'
+import { LogOut, User, Compass, MessageSquare, Plus, Bell } from 'lucide-react'
 import NotificationDropdown from "../NotificationDropdown";
-import api from '../../service/api'
+import api, { getBackendUrl } from '../../service/api'
 import { io } from "socket.io-client";
 import { useToast } from '../ui/toast';
 
@@ -32,7 +31,7 @@ function Header() {
             fetchNotifications();
 
             // Connect Socket
-            const socketUrl = import.meta.env.PROD ? window.location.origin : "http://localhost:5001";
+            const socketUrl = getBackendUrl();
             const newSocket = io(socketUrl, {
                 withCredentials: true
             });
@@ -78,126 +77,133 @@ function Header() {
     };
 
     return (
-        <header className="w-full h-full sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-gray-100 shadow-sm">
-            <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="flex items-center justify-between h-20">
+        <header className="w-full sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-200/80 shadow-xs">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="flex items-center justify-between h-18">
 
-                    {/* Logo */}
-                    <Link to="/" className="flex items-center gap-2 group cursor-pointer">
-                        <div className="relative">
-                            <div className="absolute -inset-1 bg-linear-to-r from-blue-400 to-purple-400 rounded-full blur opacity-20 group-hover:opacity-30 transition duration-300"></div>
-                            <img
-                                src="/logo.png"
-                                alt="Logo"
-                                className="relative w-10 h-10 object-contain transform group-hover:scale-105 transition duration-300"
-                            />
-                        </div>
+                    {/* Pathora Logo Brand Lockup */}
+                    <Link to="/" className="flex items-center gap-3 group cursor-pointer select-none">
+                        <img
+                            src="/logo.png"
+                            alt="Pathora Logo"
+                            className="w-10 h-10 rounded-xl object-contain shadow-xs transform group-hover:scale-105 transition-transform duration-200"
+                        />
                         <div className="flex flex-col">
-                            <h1 className='font-bold text-lg tracking-tight bg-linear-to-r from-sky-600 to-fuchsia-600 bg-clip-text text-transparent'>
-                                TravelAI
-                            </h1>
-                            <span className="text-[10px] text-gray-500 font-medium tracking-wider">
-                                PLAN YOUR PERFECT TRIP
+                            <span className="font-extrabold text-xl tracking-tight text-[#0A1628] font-jakarta leading-none group-hover:text-[#00B4D8] transition-colors">
+                                Pathora
+                            </span>
+                            <span className="text-[11px] font-semibold text-[#00B4D8] tracking-wider mt-0.5">
+                                Every Journey Has a Path.
                             </span>
                         </div>
                     </Link>
 
-                    {/* Desktop Navigation */}
+                    {/* Desktop Navigation Links */}
                     <nav className="hidden md:flex items-center space-x-1">
-                        <Link to="/" className="px-3 py-1.5 text-sm text-gray-700 hover:text-blue-600 font-medium rounded-lg hover:bg-gray-50 transition-colors duration-200 relative group">
+                        <Link
+                            to="/"
+                            className="px-3.5 py-2 text-sm text-slate-700 hover:text-[#00B4D8] font-medium rounded-lg hover:bg-slate-50 transition-colors"
+                        >
                             Home
-                            <span className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-0 h-0.5 bg-linear-to-r from-blue-400 to-purple-400 group-hover:w-4/5 transition-all duration-300"></span>
                         </Link>
-                        <Link to="/about" className="px-3 py-1.5 text-sm text-gray-700 hover:text-blue-600 font-medium rounded-lg hover:bg-gray-50 transition-colors duration-200 relative group">
+                        <Link
+                            to="/explore"
+                            className="px-3.5 py-2 text-sm text-slate-700 hover:text-[#00B4D8] font-medium rounded-lg hover:bg-slate-50 transition-colors"
+                        >
+                            Explore
+                        </Link>
+                        <Link
+                            to="/about"
+                            className="px-3.5 py-2 text-sm text-slate-700 hover:text-[#00B4D8] font-medium rounded-lg hover:bg-slate-50 transition-colors"
+                        >
                             About
-                            <span className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-0 h-0.5 bg-linear-to-r from-blue-400 to-purple-400 group-hover:w-4/5 transition-all duration-300"></span>
                         </Link>
-                        <Link to="/contact" className="px-3 py-1.5 text-sm text-gray-700 hover:text-blue-600 font-medium rounded-lg hover:bg-gray-50 transition-colors duration-200 relative group">
+                        <Link
+                            to="/contact"
+                            className="px-3.5 py-2 text-sm text-slate-700 hover:text-[#00B4D8] font-medium rounded-lg hover:bg-slate-50 transition-colors"
+                        >
                             Contact
-                            <span className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-0 h-0.5 bg-linear-to-r from-blue-400 to-purple-400 group-hover:w-4/5 transition-all duration-300"></span>
                         </Link>
                     </nav>
 
-                    {/* Right Side - Desktop */}
-                    <div className="hidden md:flex items-center gap-2">
-                        <Link to="/explore">
-                            <Button variant="ghost" size="sm" className="text-sm text-gray-700 h-8 px-3">Explore</Button>
-                        </Link>
-                        <Link to="/my-trips">
-                            <Button variant="ghost" size="sm" className="text-sm text-gray-700 h-8 px-3">My Trips</Button>
-                        </Link>
-                        <Link to="/chat">
-                            <Button variant="ghost" size="sm" className="text-sm text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 h-8 px-3">
-                                Chat
-                            </Button>
-                        </Link>
-                        <Link to="/create-trip">
-                            <Button variant="outline" size="sm" className="text-sm text-gray-700 h-8 px-3">
-                                + Create Trip
-                            </Button>
-                        </Link>
-                        {user?.role === 'admin' && (
-                            <Button asChild size="sm" className="text-sm bg-red-600 hover:bg-red-700 text-white h-8 px-3">
-                                <Link to="/admin">Panel</Link>
-                            </Button>
-                        )}
-                        {user?.role === 'organiser' && (
-                            <Button asChild size="sm" className="text-sm bg-blue-600 hover:bg-blue-700 text-white h-8 px-3">
-                                <Link to="/organiser">Panel</Link>
-                            </Button>
-                        )}
-
-                        {/* Notification Bell */}
-                        {user && (
-                            <NotificationDropdown
-                                notifications={notifications}
-                                onMarkRead={handleMarkRead}
-                                onMarkAllRead={handleMarkAllRead}
-                            />
-                        )}
-
-                        {/* Auth Buttons */}
+                    {/* Right Action Bar */}
+                    <div className="hidden md:flex items-center gap-2.5">
                         {user ? (
-                            <div className="flex items-center gap-2 ml-2 pl-2 border-l border-gray-200">
-                                <Link to="/profile" className="flex items-center gap-2 px-2 py-1 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer group">
-                                    <div className="flex flex-col items-end">
-                                        <div className="flex items-center gap-2">
-                                            <User className="w-4 h-4 text-gray-600 group-hover:text-blue-600" />
-                                            <span className="text-sm font-medium text-gray-700 group-hover:text-blue-600">{user.username || user.email}</span>
-                                        </div>
-                                        {user.role === 'organiser' && (
-                                            <span className="text-[10px] bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded font-bold uppercase tracking-tight">
-                                                Organiser
-                                            </span>
-                                        )}
-                                        {user.role === 'admin' && (
-                                            <span className="text-[10px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded font-bold uppercase tracking-tight">
-                                                Admin
-                                            </span>
-                                        )}
-                                    </div>
+                            <>
+                                <Link to="/my-trips">
+                                    <Button variant="ghost" size="sm" className="text-slate-700 hover:text-[#00B4D8] hover:bg-slate-50">
+                                        My Trips
+                                    </Button>
                                 </Link>
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => {
-                                        logout();
-                                        navigate('/');
-                                    }}
-                                    className="text-sm h-8 px-3 text-red-600 hover:text-red-700 hover:bg-red-50"
-                                >
-                                    <LogOut className="w-4 h-4" />
-                                </Button>
-                            </div>
+                                <Link to="/chat">
+                                    <Button variant="ghost" size="sm" className="text-slate-700 hover:text-[#00B4D8] hover:bg-[#F0F9FF]">
+                                        <MessageSquare className="w-4 h-4 mr-1 text-[#00B4D8]" />
+                                        Chat
+                                    </Button>
+                                </Link>
+                                <Link to="/create-trip">
+                                    <Button size="sm" className="bg-[#00B4D8] hover:bg-[#0096B4] text-white shadow-sm shadow-cyan-500/20">
+                                        <Plus className="w-4 h-4 mr-1" />
+                                        Plan Trip
+                                    </Button>
+                                </Link>
+
+                                {user?.role === 'admin' && (
+                                    <Button asChild size="sm" className="bg-rose-600 hover:bg-rose-700 text-white text-xs px-2.5">
+                                        <Link to="/admin">Admin</Link>
+                                    </Button>
+                                )}
+                                {user?.role === 'organiser' && (
+                                    <Button asChild size="sm" className="bg-[#0A1628] hover:bg-[#16243C] text-white text-xs px-2.5">
+                                        <Link to="/organiser">Organiser</Link>
+                                    </Button>
+                                )}
+
+                                {/* Notification Bell */}
+                                <NotificationDropdown
+                                    notifications={notifications}
+                                    onMarkRead={handleMarkRead}
+                                    onMarkAllRead={handleMarkAllRead}
+                                />
+
+                                {/* User profile badge & logout */}
+                                <div className="flex items-center gap-2 pl-2 border-l border-slate-200">
+                                    <Link to="/profile" className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-slate-50 transition-colors">
+                                        <div className="w-8 h-8 rounded-full bg-[#0A1628] text-white flex items-center justify-center font-bold text-xs">
+                                            {(user.username || user.email || "P")[0].toUpperCase()}
+                                        </div>
+                                        <div className="flex flex-col text-left">
+                                            <span className="text-xs font-semibold text-slate-800 leading-tight">
+                                                {user.username || user.email.split('@')[0]}
+                                            </span>
+                                            <span className="text-[10px] text-[#00B4D8] capitalize font-medium">
+                                                {user.role || 'Member'}
+                                            </span>
+                                        </div>
+                                    </Link>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => {
+                                            logout();
+                                            navigate('/');
+                                        }}
+                                        className="h-8 w-8 text-slate-400 hover:text-rose-600 hover:bg-rose-50"
+                                        title="Logout"
+                                    >
+                                        <LogOut className="w-4 h-4" />
+                                    </Button>
+                                </div>
+                            </>
                         ) : (
-                            <div className="flex items-center gap-2 ml-2 pl-2 border-l border-gray-200">
+                            <div className="flex items-center gap-3">
                                 <Link to="/login">
-                                    <Button variant="ghost" size="sm" className="text-sm text-gray-700 h-8 px-3">
-                                        Log In
+                                    <Button variant="ghost" size="sm" className="text-slate-700 hover:text-[#00B4D8] font-medium">
+                                        Login
                                     </Button>
                                 </Link>
                                 <Link to="/register">
-                                    <Button size="sm" className="text-sm bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white h-8 px-4">
+                                    <Button size="sm" className="bg-[#00B4D8] hover:bg-[#0096B4] text-white px-5 rounded-xl shadow-sm shadow-[#00B4D8]/30">
                                         Sign Up
                                     </Button>
                                 </Link>
@@ -205,72 +211,114 @@ function Header() {
                         )}
                     </div>
 
-                    {/* Mobile Menu Button */}
+                    {/* Mobile Hamburger Button */}
                     <button
                         onClick={() => setIsMenuOpen(!isMenuOpen)}
-                        className="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                        className="md:hidden p-2 rounded-xl text-slate-700 hover:bg-slate-100 transition-colors"
+                        aria-label="Toggle Navigation"
                     >
-                        <div className="w-6 h-6 flex flex-col justify-center items-center gap-1.5">
-                            <span className={`w-6 h-0.5 bg-gray-700 transform transition-all duration-300 ${isMenuOpen ? 'rotate-45 translate-y-2' : ''}`}></span>
-                            <span className={`w-6 h-0.5 bg-gray-700 transition-all duration-300 ${isMenuOpen ? 'opacity-0' : ''}`}></span>
-                            <span className={`w-6 h-0.5 bg-gray-700 transform transition-all duration-300 ${isMenuOpen ? '-rotate-45 -translate-y-2' : ''}`}></span>
+                        <div className="w-6 h-5 flex flex-col justify-between">
+                            <span className={`w-full h-0.5 bg-slate-800 rounded-full transition-all duration-300 ${isMenuOpen ? 'rotate-45 translate-y-2' : ''}`} />
+                            <span className={`w-full h-0.5 bg-slate-800 rounded-full transition-all duration-300 ${isMenuOpen ? 'opacity-0' : ''}`} />
+                            <span className={`w-full h-0.5 bg-slate-800 rounded-full transition-all duration-300 ${isMenuOpen ? '-rotate-45 -translate-y-2' : ''}`} />
                         </div>
                     </button>
                 </div>
 
-                {/* Mobile Navigation */}
+                {/* Mobile Drawer */}
                 {isMenuOpen && (
-                    <div className="md:hidden animate-fadeIn">
-                        <div className="py-4 px-2 space-y-1 border-t border-gray-100 mt-4">
-                            {['Home', 'Destinations', 'Trips', 'About', 'Contact'].map((item) => (
-                                <a
-                                    key={item}
-                                    href="#"
-                                    className="block px-4 py-3 text-gray-700 hover:text-blue-600 hover:bg-gray-50 rounded-lg font-medium transition-colors"
+                    <div className="md:hidden py-4 border-t border-slate-100 animate-slideDown space-y-2">
+                        <Link
+                            to="/"
+                            className="block px-3 py-2 text-base font-medium text-slate-700 hover:bg-[#F0F9FF] hover:text-[#00B4D8] rounded-lg"
+                            onClick={() => setIsMenuOpen(false)}
+                        >
+                            Home
+                        </Link>
+                        <Link
+                            to="/explore"
+                            className="block px-3 py-2 text-base font-medium text-slate-700 hover:bg-[#F0F9FF] hover:text-[#00B4D8] rounded-lg"
+                            onClick={() => setIsMenuOpen(false)}
+                        >
+                            Explore
+                        </Link>
+                        <Link
+                            to="/about"
+                            className="block px-3 py-2 text-base font-medium text-slate-700 hover:bg-[#F0F9FF] hover:text-[#00B4D8] rounded-lg"
+                            onClick={() => setIsMenuOpen(false)}
+                        >
+                            About
+                        </Link>
+                        <Link
+                            to="/contact"
+                            className="block px-3 py-2 text-base font-medium text-slate-700 hover:bg-[#F0F9FF] hover:text-[#00B4D8] rounded-lg"
+                            onClick={() => setIsMenuOpen(false)}
+                        >
+                            Contact
+                        </Link>
+
+                        {user ? (
+                            <div className="pt-3 border-t border-slate-100 space-y-2">
+                                <Link
+                                    to="/my-trips"
+                                    className="block px-3 py-2 text-base font-medium text-slate-700 hover:bg-slate-50 rounded-lg"
                                     onClick={() => setIsMenuOpen(false)}
                                 >
-                                    {item}
-                                </a>
-                            ))}
-                            <div className="pt-4 space-y-2">
-                                <div className="pt-4 space-y-2">
-                                    <Link to="/explore" onClick={() => setIsMenuOpen(false)}>
-                                        <Button variant="ghost" className="w-full justify-center">Explore</Button>
-                                    </Link>
-                                    <Link to="/my-trips" onClick={() => setIsMenuOpen(false)}>
-                                        <Button variant="ghost" className="w-full justify-center">My Trips</Button>
-                                    </Link>
-                                    <Link to="/chat" onClick={() => setIsMenuOpen(false)}>
-                                        <Button variant="ghost" className="w-full justify-center text-blue-600">Community Chat</Button>
-                                    </Link>
-                                    {user?.role === 'admin' && (
-                                        <Button asChild className="w-full justify-center bg-red-600 hover:bg-red-700 text-white">
-                                            <Link to="/admin" onClick={() => setIsMenuOpen(false)}>Admin Panel</Link>
-                                        </Button>
-                                    )}
-                                    {user?.role === 'organiser' && (
-                                        <Button asChild className="w-full justify-center bg-blue-600 hover:bg-blue-700 text-white">
-                                            <Link to="/organiser" onClick={() => setIsMenuOpen(false)}>Organiser Panel</Link>
-                                        </Button>
-                                    )}
-                                    <Link to="/create-trip" onClick={() => setIsMenuOpen(false)}>
-                                        <Button
-                                            className="w-full justify-center bg-linear-to-r from-blue-500 to-purple-500 
-                                                hover:from-blue-600 hover:to-purple-600 text-white"
-                                        >
-                                            Plan a Trip
-                                        </Button>
-                                    </Link>
-
-                                </div>
+                                    My Trips
+                                </Link>
+                                <Link
+                                    to="/chat"
+                                    className="block px-3 py-2 text-base font-medium text-slate-700 hover:bg-slate-50 rounded-lg"
+                                    onClick={() => setIsMenuOpen(false)}
+                                >
+                                    Group Chat
+                                </Link>
+                                <Link
+                                    to="/create-trip"
+                                    className="block px-3 py-2 text-base font-medium text-white bg-[#00B4D8] rounded-xl text-center"
+                                    onClick={() => setIsMenuOpen(false)}
+                                >
+                                    + Plan New Trip
+                                </Link>
+                                <Link
+                                    to="/profile"
+                                    className="block px-3 py-2 text-base font-medium text-slate-700 hover:bg-slate-50 rounded-lg"
+                                    onClick={() => setIsMenuOpen(false)}
+                                >
+                                    Profile ({user.username || user.email})
+                                </Link>
+                                <button
+                                    onClick={() => {
+                                        setIsMenuOpen(false);
+                                        logout();
+                                        navigate('/');
+                                    }}
+                                    className="w-full text-left px-3 py-2 text-base font-medium text-rose-600 hover:bg-rose-50 rounded-lg"
+                                >
+                                    Log Out
+                                </button>
                             </div>
-                        </div>
+                        ) : (
+                            <div className="pt-3 border-t border-slate-100 grid grid-cols-2 gap-2">
+                                <Link
+                                    to="/login"
+                                    onClick={() => setIsMenuOpen(false)}
+                                    className="w-full py-2.5 text-center text-sm font-semibold text-slate-700 border border-slate-200 rounded-xl"
+                                >
+                                    Login
+                                </Link>
+                                <Link
+                                    to="/register"
+                                    onClick={() => setIsMenuOpen(false)}
+                                    className="w-full py-2.5 text-center text-sm font-semibold text-white bg-[#00B4D8] rounded-xl shadow-xs"
+                                >
+                                    Sign Up
+                                </Link>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>
-
-            {/* Decorative Element */}
-            <div className="absolute bottom-0 left-0 right-0 h-px bg-linear-to-r from-transparent via-blue-200 to-transparent"></div>
         </header>
     )
 }

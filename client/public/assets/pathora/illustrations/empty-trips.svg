@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" fill="none" class="w-full h-full">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F0F9FF"/>
+      <stop offset="100%" stop-color="#E0F2FE"/>
+    </linearGradient>
+    <linearGradient id="sunGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FF8C42"/>
+      <stop offset="100%" stop-color="#FF6B35"/>
+    </linearGradient>
+    <linearGradient id="mountGrad1" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1E293B"/>
+      <stop offset="100%" stop-color="#0A1628"/>
+    </linearGradient>
+    <linearGradient id="mountGrad2" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#334155"/>
+      <stop offset="100%" stop-color="#1E293B"/>
+    </linearGradient>
+    <linearGradient id="riverGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00E5FF"/>
+      <stop offset="50%" stop-color="#00B4D8"/>
+      <stop offset="100%" stop-color="#0284C7"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Ambient background glow -->
+  <circle cx="200" cy="150" r="120" fill="url(#bgGrad)" opacity="0.6"/>
+
+  <!-- Sunset Sun -->
+  <circle cx="200" cy="120" r="48" fill="url(#sunGrad)"/>
+
+  <!-- Distant Birds -->
+  <path d="M150 90 Q155 85 160 90 Q165 85 170 90" stroke="#FF8C42" stroke-width="2" stroke-linecap="round" fill="none"/>
+  <path d="M168 80 Q172 76 176 80 Q180 76 184 80" stroke="#FF8C42" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+
+  <!-- Back Mountains -->
+  <polygon points="120,200 170,110 220,200" fill="url(#mountGrad2)"/>
+  <polygon points="190,200 240,125 290,200" fill="url(#mountGrad2)"/>
+
+  <!-- Front Mountains with Snowcaps -->
+  <polygon points="70,230 150,130 230,230" fill="url(#mountGrad1)"/>
+  <polygon points="150,130 135,160 145,155 150,165 155,155 165,160" fill="#FFFFFF" opacity="0.9"/>
+
+  <polygon points="180,230 250,140 320,230" fill="url(#mountGrad1)"/>
+  <polygon points="250,140 238,168 246,162 250,172 255,164 262,168" fill="#FFFFFF" opacity="0.9"/>
+
+  <!-- Winding Path / River (Teal) -->
+  <path d="M170 185 C 190 190, 210 205, 175 220 C 140 235, 120 255, 130 280 L 175 280 C 160 260, 180 245, 215 230 C 245 215, 230 195, 205 185 Z" fill="url(#riverGrad)"/>
+
+  <!-- Pin Marker at destination -->
+  <g transform="translate(245, 100)">
+    <circle cx="15" cy="15" r="18" fill="#0A1628" opacity="0.15"/>
+    <path d="M15 0 C6.7 0 0 6.7 0 15 C0 26.2 15 40 15 40 C15 40 30 26.2 30 15 C30 6.7 23.3 0 15 0 Z" fill="#00B4D8"/>
+    <circle cx="15" cy="14" r="6" fill="#FFFFFF"/>
+  </g>
+</svg>

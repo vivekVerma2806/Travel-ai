@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import api from '../service/api';
 import UserTripCard from '../components/ui/UserTripCard';
 import TripFilters from '../components/custom/TripFilters';
-import { Loader2, Globe } from 'lucide-react';
+import { Loader2, Compass } from 'lucide-react';
 
 const Explore = () => {
     const [trips, setTrips] = useState([]);
@@ -19,7 +19,6 @@ const Explore = () => {
         const fetchTrips = async () => {
             setLoading(true);
             try {
-                // Construct query params
                 const params = new URLSearchParams();
                 if (filters.query) params.append('query', filters.query);
                 if (filters.budget) params.append('budget', filters.budget);
@@ -29,7 +28,6 @@ const Explore = () => {
                 const res = await api.get(`/trips?${params.toString()}`);
                 setTrips(res.data);
 
-                // Fetch user bookings if logged in
                 if (localStorage.getItem('token')) {
                     const bookingsRes = await api.get('/bookings/user-bookings');
                     setUserBookings(bookingsRes.data);
@@ -41,54 +39,65 @@ const Explore = () => {
             }
         };
 
-        // Debounce search
         const timeoutId = setTimeout(() => {
             fetchTrips();
-        }, 500);
+        }, 400);
 
         return () => clearTimeout(timeoutId);
     }, [filters]);
 
     return (
-        <div className="px-5 sm:px-10 md:px-24 lg:px-48 xl:px-64 py-10 bg-gray-50 min-h-screen">
-            <div className="text-center mb-12">
-                <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-4">
-                    Explore Community Trips
-                </h1>
-                <p className="text-gray-600 text-lg">
-                    Discover itineraries created by other travelers
-                </p>
-            </div>
+        <div className="min-h-screen bg-[#F8FAFC] py-12 px-4 sm:px-6 lg:px-8">
+            <div className="max-w-7xl mx-auto">
+                <div className="text-center max-w-2xl mx-auto mb-10">
+                    <span className="text-xs font-bold uppercase tracking-wider text-[#00B4D8]">
+                        Discover the World
+                    </span>
+                    <h1 className="text-3xl sm:text-4xl font-extrabold text-[#0A1628] font-jakarta mt-1 mb-3">
+                        Explore Community Journeys
+                    </h1>
+                    <p className="text-slate-500 text-sm">
+                        Browse handcrafted AI itineraries created by travelers worldwide. Request to join group departures or save paths to your favorites.
+                    </p>
+                </div>
 
-            <div className="mb-8">
-                <TripFilters filters={filters} setFilters={setFilters} />
-            </div>
+                <div className="mb-8">
+                    <TripFilters filters={filters} setFilters={setFilters} />
+                </div>
 
-            {loading ? (
-                <div className="flex justify-center py-20">
-                    <Loader2 className="w-10 h-10 animate-spin text-blue-600" />
-                </div>
-            ) : trips.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    {trips.map((trip) => {
-                        const booking = userBookings.find(b => b.tripId?._id === trip._id || b.tripId === trip._id);
-                        return (
-                            <UserTripCard
-                                key={trip._id}
-                                trip={trip}
-                                isJoined={!!booking}
-                                bookingStatus={booking?.status}
-                            />
-                        );
-                    })}
-                </div>
-            ) : (
-                <div className="text-center py-20 bg-white rounded-xl border border-gray-100 shadow-sm">
-                    <Globe className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                    <h3 className="text-xl font-bold text-gray-800">No trips found</h3>
-                    <p className="text-gray-500">Try adjusting your filters to find more adventures.</p>
-                </div>
-            )}
+                {loading ? (
+                    <div className="flex flex-col items-center justify-center py-24 gap-3">
+                        <div className="w-10 h-10 border-3 border-[#00B4D8] border-t-transparent rounded-full animate-spin" />
+                        <p className="text-xs font-semibold text-slate-500">Searching Pathora journeys...</p>
+                    </div>
+                ) : trips.length > 0 ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {trips.map((trip) => {
+                            const booking = userBookings.find(b => b.tripId?._id === trip._id || b.tripId === trip._id);
+                            return (
+                                <UserTripCard
+                                    key={trip._id}
+                                    trip={trip}
+                                    isJoined={!!booking}
+                                    bookingStatus={booking?.status}
+                                />
+                            );
+                        })}
+                    </div>
+                ) : (
+                    <div className="text-center py-16 bg-white rounded-2xl border border-slate-200 shadow-xs max-w-md mx-auto">
+                        <img
+                            src="/assets/pathora/illustrations/no-results.svg"
+                            alt="No journeys found"
+                            className="w-40 h-32 mx-auto mb-4"
+                        />
+                        <h3 className="text-base font-bold text-[#0A1628] font-jakarta">No Journeys Match Your Search</h3>
+                        <p className="text-xs text-slate-500 mt-1 max-w-xs mx-auto">
+                            Try adjusting your filters or destination keywords to find more adventures.
+                        </p>
+                    </div>
+                )}
+            </div>
         </div>
     );
 };

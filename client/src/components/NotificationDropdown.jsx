@@ -36,26 +36,28 @@ const NotificationDropdown = ({ notifications, onMarkRead, onMarkAllRead }) => {
                     )}
                 </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-80" align="end" forceMount>
-                <div className="flex items-center justify-between px-4 py-2">
-                    <span className="font-semibold text-sm">Notifications</span>
+            <DropdownMenuContent className="w-84 p-0 rounded-2xl border border-slate-200 shadow-xl bg-white" align="end" forceMount>
+                <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
+                    <span className="font-extrabold text-xs uppercase tracking-wider text-[#0A1628] font-jakarta">Notifications</span>
                     {unreadCount > 0 && (
-                        <Button
-                            variant="ghost"
-                            size="xs"
-                            className="text-xs text-blue-600 h-6 px-2"
+                        <button
+                            className="text-[11px] font-bold text-[#00B4D8] hover:text-[#0096B4] transition-colors cursor-pointer"
                             onClick={onMarkAllRead}
                         >
                             Mark all read
-                        </Button>
+                        </button>
                     )}
                 </div>
-                <DropdownMenuSeparator />
-                <ScrollArea className="h-[300px]">
+                <ScrollArea className="h-[320px]">
                     {notifications.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-8 text-gray-500">
-                            <Bell className="h-8 w-8 mb-2 opacity-20" />
-                            <p className="text-xs">No notifications yet</p>
+                        <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
+                            <img
+                                src="/assets/pathora/illustrations/no-notifications.svg"
+                                alt="No notifications"
+                                className="w-24 h-24 mb-3 object-contain"
+                            />
+                            <p className="text-xs font-bold text-[#0A1628]">All Caught Up!</p>
+                            <p className="text-[11px] text-slate-400 mt-0.5">No notifications on your path right now.</p>
                         </div>
                     ) : (
                         notifications.map((notif) => (
@@ -63,19 +65,19 @@ const NotificationDropdown = ({ notifications, onMarkRead, onMarkAllRead }) => {
                                 key={notif._id}
                                 onClick={() => handleItemClick(notif)}
                                 className={`
-                                    flex items-start gap-3 p-3 text-sm cursor-pointer transition-colors border-b border-gray-50 last:border-0
-                                    ${notif.isRead ? 'bg-white hover:bg-gray-50' : 'bg-blue-50/50 hover:bg-blue-50'}
+                                    flex items-start gap-3 p-3.5 text-xs cursor-pointer transition-colors border-b border-slate-100 last:border-0
+                                    ${notif.isRead ? 'bg-white hover:bg-slate-50' : 'bg-[#F0F9FF] hover:bg-[#E0F2FE]/60'}
                                 `}
                             >
                                 <div className={`
-                                    mt-1 h-2 w-2 rounded-full flex-shrink-0
-                                    ${notif.isRead ? 'bg-gray-300' : 'bg-blue-500'}
+                                    mt-1.5 h-2 w-2 rounded-full flex-shrink-0
+                                    ${notif.isRead ? 'bg-slate-300' : 'bg-[#00B4D8] ring-2 ring-[#00B4D8]/20'}
                                 `} />
                                 <div className="flex-1 space-y-1">
-                                    <p className={`leading-snug ${notif.isRead ? 'text-gray-600' : 'text-gray-900 font-medium'}`}>
+                                    <p className={`leading-snug ${notif.isRead ? 'text-slate-600' : 'text-[#0A1628] font-bold'}`}>
                                         {notif.message}
                                     </p>
-                                    <p className="text-[10px] text-gray-400">
+                                    <p className="text-[10px] text-slate-400">
                                         {new Date(notif.createdAt).toLocaleDateString()} • {new Date(notif.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                     </p>
                                 </div>

@@ -1,13 +1,11 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { MapPin, Star, Clock, Calendar, Navigation, Globe, Share2, Users, Shield, CheckCircle, MessageCircle } from "lucide-react";
+import { MapPin, Star, Clock, Calendar, Navigation, Globe, Share2, Users, Shield, CheckCircle, MessageCircle, Heart, XCircle, ArrowLeft } from "lucide-react";
 import TripCard from "../components/ui/TripCard";
 import ItinerarySection from '../components/ItinerarySection';
 import api from "../service/api";
 import { useToast } from '../components/ui/toast';
 import { useAuth } from '../context/AuthContext';
-
-
 
 export default function ViewTrip() {
   const { id } = useParams();
@@ -15,13 +13,12 @@ export default function ViewTrip() {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  // New Features State
   const { user } = useAuth();
-  const [bookingStatus, setBookingStatus] = useState('none'); // none, pending, approved, rejected
-  const [showChat, setShowChat] = useState(false);
+  const [bookingStatus, setBookingStatus] = useState('none');
   const [showTripDetails, setShowTripDetails] = useState(false);
-  const [userBooking, setUserBooking] = useState(null);
   const [members, setMembers] = useState([]);
+  const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'itinerary' | 'members' | 'hotels'
+  const [isFavorited, setIsFavorited] = useState(false);
 
   useEffect(() => {
     const fetchTrip = async () => {
@@ -32,6 +29,7 @@ export default function ViewTrip() {
           setTrip({
             ...data.tripData,
             destination: data.destination,
+            rawTrip: data
           });
         }
       } catch (error) {
@@ -70,11 +68,9 @@ export default function ViewTrip() {
 
   const checkBookingStatus = async () => {
     try {
-      // Check status by destination name associated with this trip
       const { data } = await api.get(`/bookings/status/${encodeURIComponent(trip.destination)}`);
       if (data) {
         setBookingStatus(data.status || 'none');
-        setUserBooking(data._id ? data : null);
       }
     } catch (error) {
       console.error("Failed to check status", error);
@@ -82,22 +78,25 @@ export default function ViewTrip() {
   };
 
   const handleJoinTrip = async () => {
+    if (!user) {
+      toast({
+        title: "Login Required",
+        description: "Please log in to join community journeys."
+      });
+      return;
+    }
     try {
-      console.log("DEBUG: User attempting to join trip", id);
-      const response = await api.post('/bookings/join', {
+      await api.post('/bookings/join', {
         destination: trip.destination,
         tripId: id
       });
-      console.log("DEBUG: Join request response:", response.data);
       setBookingStatus('pending');
-      fetchMembers(); // Update members list after joining
+      fetchMembers();
       toast({
-        title: "Request Sent",
-        description: "Your request has been sent to the Organiser/Admin.",
-        className: "bg-green-50 border-green-200 text-green-800"
+        title: "Request Submitted",
+        description: "Your join request has been sent to the journey organizer.",
       });
     } catch (error) {
-      console.error("Join Trip Error FULL:", error);
       const errorMsg = error.response?.data?.message || error.message || "Failed to join.";
       toast({
         title: "Error Joining",
@@ -111,448 +110,585 @@ export default function ViewTrip() {
     navigator.clipboard.writeText(window.location.href);
     toast({
       title: "Link Copied!",
-      description: "You can now share this trip with your friends."
+      description: "Pathora journey link copied to clipboard."
     });
   };
 
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center">
-      <p className="text-xl font-medium text-gray-500">Loading your adventure...</p>
+    <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC]">
+      <div className="flex flex-col items-center gap-3">
+        <div className="w-10 h-10 border-3 border-[#00B4D8] border-t-transparent rounded-full animate-spin" />
+        <p className="text-sm font-semibold text-slate-600">Loading Pathora Journey...</p>
+      </div>
     </div>
   );
 
   if (!trip) return (
-    <div className="min-h-screen bg-linear-to-b from-blue-50/50 to-white flex items-center justify-center px-4">
-      <div className="text-center max-w-md">
-        <div className="w-24 h-24 mx-auto mb-6 bg-linear-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center">
-          <Globe className="w-12 h-12 text-blue-500" />
-        </div>
-        <h1 className="text-2xl font-bold text-gray-800 mb-3">No Trip Found</h1>
-        <p className="text-gray-600 mb-8">Please generate a trip first to view your itinerary.</p>
+    <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center px-4">
+      <div className="text-center max-w-md bg-white p-8 rounded-2xl border border-slate-200 shadow-sm">
+        <img
+          src="/assets/pathora/illustrations/empty-trips.svg"
+          alt="No trip found"
+          className="w-48 h-36 mx-auto mb-4"
+        />
+        <h1 className="text-xl font-bold text-[#0A1628] mb-2 font-jakarta">No Journey Found</h1>
+        <p className="text-slate-500 text-xs mb-6">This itinerary may have been removed or does not exist.</p>
         <Link
           to="/create-trip"
-          className="inline-flex items-center gap-2 px-6 py-3 bg-linear-to-r from-blue-600 to-purple-600 text-white font-medium rounded-xl hover:shadow-lg transition-all duration-300"
+          className="inline-flex items-center gap-2 px-6 py-2.5 bg-[#00B4D8] hover:bg-[#0096B4] text-white text-xs font-bold rounded-xl transition-colors shadow-xs"
         >
-          <Navigation className="w-5 h-5" />
-          Create New Trip
+          <Navigation className="w-4 h-4" />
+          Plan New Journey
         </Link>
       </div>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-linear-to-b from-gray-50/50 to-white">
-      {/* Trip Header */}
-      <div className="bg-linear-to-r from-blue-600/10 via-purple-600/10 to-emerald-600/10 border-b border-gray-200/50">
-        <div className="px-5 sm:px-10 md:px-24 lg:px-48 xl:px-64 py-12">
-          <div className="max-w-4xl mx-auto">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-linear-to-r from-blue-50 to-purple-50 border border-blue-100 mb-6 shadow-sm">
-              <Calendar className="w-4 h-4 text-blue-500" />
-              <span className="text-sm font-semibold bg-linear-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                Your Custom Trip Itinerary
-              </span>
-            </div>
+    <div className="min-h-screen bg-[#F8FAFC] pb-20">
 
-            <h1 className="text-4xl md:text-5xl font-bold bg-linear-to-r from-blue-700 via-purple-700 to-gray-800 bg-clip-text text-transparent mb-2">
-              {trip.hotels?.[0]?.hotelName || trip.destination || 'Your Trip'}
-            </h1>
-            {trip.hotels?.[0]?.hotelName && (
-              <p className="text-xl text-gray-500 mb-6 flex items-center gap-2">
-                <MapPin className="w-5 h-5 text-blue-500" /> {trip.destination}
-              </p>
-            )}
+      {/* Panoramic Banner matching UI Reference Kyoto screen */}
+      <div className="relative h-72 sm:h-96 w-full overflow-hidden bg-[#0A1628]">
+        <img
+          src={trip.destination?.toLowerCase().includes("kyoto")
+            ? "/assets/pathora/destinations/kyoto-banner.jpg"
+            : trip.destination?.toLowerCase().includes("bali")
+            ? "/assets/pathora/destinations/bali.jpg"
+            : trip.destination?.toLowerCase().includes("paris")
+            ? "/assets/pathora/destinations/paris.jpg"
+            : "/assets/pathora/destinations/santorini-hero.jpg"
+          }
+          alt={trip.destination}
+          className="w-full h-full object-cover filter brightness-[0.85]"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0A1628] via-transparent to-black/30" />
 
-            <div className="flex flex-wrap items-center justify-between gap-6 text-gray-600">
-              <div className="flex items-center gap-6">
-                <div className="flex items-center gap-2">
-                  <Calendar className="w-5 h-5 text-blue-500" />
-                  <span className="font-medium">{trip.duration || 'Custom'} days</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Star className="w-5 h-5 text-amber-500" />
-                  <span className="font-medium">{trip.rating || 'Premium'} Experience</span>
-                </div>
-              </div>
-
-              <button onClick={handleShare} className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                <Share2 className="w-4 h-4 text-gray-700" />
-                <span className="font-medium text-gray-700">Share</span>
-              </button>
-            </div>
-          </div>
+        <div className="absolute top-6 left-4 sm:left-8 z-10">
+          <Link
+            to="/explore"
+            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-black/40 hover:bg-black/60 text-white text-xs font-medium backdrop-blur-md transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>Back to Explore</span>
+          </Link>
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="px-5 sm:px-10 md:px-24 lg:px-48 xl:px-64 py-12">
-        <div className="max-w-7xl mx-auto space-y-16">
+      {/* Main Container */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-20 relative z-20">
 
-          {/* Pending Notification Banner */}
-
-
-          {/* Members & Booking Status Section */}
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 mb-8">
-            {/* Community Members */}
-            <div className="lg:col-span-3 bg-white border border-gray-100 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow">
-              <div className="flex flex-col gap-1 mb-6">
-                <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-                  <Users className="w-5 h-5 text-blue-600" />
-                  Travel Community ({members.length})
-                </h3>
-                <p className="text-gray-500 text-sm italic">Meet the fellow adventurers joining this trip</p>
+        {/* Header Information Card matching UI Reference */}
+        <div className="bg-white rounded-2xl p-6 sm:p-8 border border-slate-200 shadow-sm mb-8">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+            <div>
+              <div className="flex items-center gap-3 mb-2 flex-wrap">
+                <span className="px-3 py-1 rounded-full text-xs font-bold bg-[#E0F7FA] text-[#0096B4] tracking-wide">
+                  Public Journey
+                </span>
+                <span className="text-xs text-slate-500 flex items-center gap-1">
+                  <MapPin className="w-3.5 h-3.5 text-[#00B4D8]" />
+                  {trip.destination}
+                </span>
+                <span className="text-xs text-slate-500 flex items-center gap-1">
+                  <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                  {trip.duration || 5} Days
+                </span>
+                <span className="text-xs text-slate-500 flex items-center gap-1">
+                  <Users className="w-3.5 h-3.5 text-slate-400" />
+                  {members.length + 1} Travelers
+                </span>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                {members.length > 0 ? (
-                  members.map((member, index) => (
-                    <div key={index} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100 group hover:border-blue-200 transition-all">
-                      <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold shadow-sm group-hover:scale-110 transition-transform">
-                        {member.userId?.username?.charAt(0).toUpperCase() || '?'}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-gray-800 truncate">{member.userId?.username}</p>
-                        <p className="text-[10px] text-gray-500 uppercase tracking-tighter">Approved Member</p>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="col-span-full flex items-center gap-3 bg-gray-50 px-6 py-8 rounded-xl border border-dashed border-gray-300 justify-center">
-                    <Globe className="w-5 h-5 text-gray-400 animate-pulse" />
-                    <span className="text-sm font-medium text-gray-500">Wait for the first member to join!</span>
-                  </div>
-                )}
-              </div>
+              <h1 className="text-2xl sm:text-4xl font-extrabold text-[#0A1628] font-jakarta leading-tight">
+                {trip.rawTrip?.title || `${trip.destination} Cultural Expedition`}
+              </h1>
+
+              <p className="text-xs sm:text-sm text-slate-500 mt-2">
+                Organized by <strong className="text-slate-800">{trip.rawTrip?.userId?.username || 'Pathora Community'}</strong>
+              </p>
             </div>
 
-            {/* User Specific Booking Detail Card */}
-            <div className={`lg:col-span-1 rounded-2xl p-6 shadow-sm border transition-all flex flex-col justify-between
-              ${bookingStatus === 'approved' ? 'bg-green-50 border-green-200' :
-                bookingStatus === 'pending' ? 'bg-yellow-50 border-yellow-200' :
-                  'bg-blue-50 border-blue-200'}`}>
+            {/* Action Buttons */}
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setIsFavorited(!isFavorited)}
+                className={`p-3 rounded-xl border border-slate-200 hover:bg-slate-50 transition-colors cursor-pointer ${
+                  isFavorited ? 'text-rose-500 border-rose-200 bg-rose-50' : 'text-slate-500'
+                }`}
+                title="Save to Favorites"
+              >
+                <Heart className={`w-5 h-5 ${isFavorited ? 'fill-rose-500' : ''}`} />
+              </button>
 
-              <div>
-                <h4 className="font-bold text-gray-800 mb-2 flex items-center gap-2">
-                  <Shield className="w-4 h-4" />
-                  Booking Status
-                </h4>
+              <button
+                type="button"
+                onClick={handleShare}
+                className="p-3 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-500 transition-colors cursor-pointer"
+                title="Share Journey"
+              >
+                <Share2 className="w-5 h-5" />
+              </button>
 
-                <div className="py-4">
-                  {bookingStatus === 'approved' ? (
-                    <div className="space-y-3">
-                      <div className="flex flex-col items-center gap-2 text-center text-green-700">
-                        <CheckCircle className="w-10 h-10" />
-                        <p className="font-bold">Access Granted!</p>
-                        <p className="text-xs">You are a confirmed member of this community trip.</p>
-                      </div>
-                      <Link
-                        to={`/chat?tripId=${id}`}
-                        className="w-full mt-4 flex items-center justify-center gap-2 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold shadow-lg shadow-green-100 transition-all transform hover:scale-[1.02]"
-                      >
-                        <MessageCircle className="w-5 h-5" />
-                        Join Trip Chat
-                      </Link>
-                    </div>
-                  ) : bookingStatus === 'pending' ? (
-                    <div className="space-y-3">
-                      <div className="flex flex-col items-center gap-2 text-center text-yellow-700">
-                        <Clock className="w-10 h-10 animate-pulse" />
-                        <p className="font-bold">Pending Review</p>
-                        <p className="text-xs">An admin is reviewing your request to join.</p>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      <div className="flex flex-col items-center gap-2 text-center text-blue-700">
-                        <Navigation className="w-10 h-10" />
-                        <p className="font-bold">Ready to travel?</p>
-                        <p className="text-xs">Request access to see the full community details.</p>
-                      </div>
-                    </div>
-                  )}
+              {/* Dynamic Booking CTA matching UI Reference */}
+              {bookingStatus === 'none' && (
+                <button
+                  type="button"
+                  onClick={handleJoinTrip}
+                  className="px-6 py-3 rounded-xl font-bold text-sm text-white bg-[#00B4D8] hover:bg-[#0096B4] shadow-sm shadow-[#00B4D8]/30 transition-all flex items-center gap-2 cursor-pointer"
+                >
+                  <Users className="w-4 h-4" />
+                  <span>Request to Join</span>
+                </button>
+              )}
+
+              {bookingStatus === 'pending' && (
+                <div className="px-5 py-2.5 rounded-xl text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200 flex items-center gap-2">
+                  <Clock className="w-4 h-4 animate-pulse" />
+                  <span>Request Pending Review</span>
                 </div>
-              </div>
+              )}
 
-              <div className="mt-4 pt-4 border-t border-black/5">
-                <p className="text-[10px] text-gray-400 uppercase font-bold tracking-widest text-center">Safety Verified Trip</p>
-              </div>
+              {bookingStatus === 'approved' && (
+                <Link
+                  to={`/chat?tripId=${id}`}
+                  className="px-6 py-3 rounded-xl font-bold text-sm text-white bg-emerald-600 hover:bg-emerald-700 shadow-sm transition-all flex items-center gap-2"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  <span>Open Trip Chat</span>
+                </Link>
+              )}
             </div>
           </div>
 
+          {/* Navigation Tabs matching UI Reference */}
+          <div className="flex items-center gap-6 mt-8 pt-6 border-t border-slate-100 overflow-x-auto text-sm font-semibold">
+            <button
+              type="button"
+              onClick={() => setActiveTab('overview')}
+              className={`pb-2 transition-colors cursor-pointer whitespace-nowrap ${
+                activeTab === 'overview'
+                  ? 'text-[#00B4D8] border-b-2 border-[#00B4D8]'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              Overview
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('itinerary')}
+              className={`pb-2 transition-colors cursor-pointer whitespace-nowrap ${
+                activeTab === 'itinerary'
+                  ? 'text-[#00B4D8] border-b-2 border-[#00B4D8]'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              Itinerary Schedule
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('hotels')}
+              className={`pb-2 transition-colors cursor-pointer whitespace-nowrap ${
+                activeTab === 'hotels'
+                  ? 'text-[#00B4D8] border-b-2 border-[#00B4D8]'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              Accommodations ({trip.hotels?.length || 0})
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('members')}
+              className={`pb-2 transition-colors cursor-pointer whitespace-nowrap ${
+                activeTab === 'members'
+                  ? 'text-[#00B4D8] border-b-2 border-[#00B4D8]'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              Travelers ({members.length})
+            </button>
+          </div>
+        </div>
 
+        {/* Tab Content */}
+        {activeTab === 'overview' && (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <div className="lg:col-span-8 space-y-8">
+              {/* About This Trip */}
+              <div className="bg-white rounded-2xl p-6 sm:p-8 border border-slate-200 shadow-xs">
+                <h3 className="text-lg font-bold text-[#0A1628] mb-3 font-jakarta">
+                  About This Trip
+                </h3>
+                <p className="text-sm text-slate-600 leading-relaxed">
+                  Explore the rich culture, stunning temples, and hidden gems of {trip.destination}.
+                  From ancient shrines to modern culinary delicacies, this trip offers the perfect blend of tradition, exploration, and community travel.
+                </p>
 
-          {/* Hotels Section */}
-          <section className="mb-12">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-2 h-10 bg-gradient-to-b from-blue-500 to-indigo-500 rounded-full"></div>
-              <h2 className="text-3xl font-bold text-gray-800">
-                🏨 Recommended Hotels
-              </h2>
+                {/* Highlights Grid */}
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mt-6 mb-3">
+                  Trip Highlights
+                </h4>
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="rounded-xl overflow-hidden aspect-video relative group">
+                    <img src="/assets/pathora/destinations/kinkaku-ji.jpg" alt="Highlight 1" className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-black/40 flex items-end p-2 text-white text-[11px] font-bold">Kinkaku-ji</div>
+                  </div>
+                  <div className="rounded-xl overflow-hidden aspect-video relative group">
+                    <img src="/assets/pathora/destinations/arashiyama.jpg" alt="Highlight 2" className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-black/40 flex items-end p-2 text-white text-[11px] font-bold">Bamboo Grove</div>
+                  </div>
+                  <div className="rounded-xl overflow-hidden aspect-video relative group">
+                    <img src="/assets/pathora/destinations/fushimi-inari.jpg" alt="Highlight 3" className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-black/40 flex items-end p-2 text-white text-[11px] font-bold">Torii Gates</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Itinerary Preview */}
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-bold text-[#0A1628] font-jakarta">
+                    Daily Schedule
+                  </h3>
+                  <button
+                    onClick={() => setActiveTab('itinerary')}
+                    className="text-xs font-bold text-[#00B4D8] hover:underline"
+                  >
+                    View All Days →
+                  </button>
+                </div>
+                <ItinerarySection itinerary={trip.itinerary} tripHotelName={trip.hotels?.[0]?.hotelName} />
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {trip?.hotels?.map((hotel, index) => (
-                <TripCard
-                  key={index}
-                  hotel={hotel}
-                  isHotel={true}
-                  tripId={id}
-                  tripHotelName={trip.hotels?.[0]?.hotelName}
-                />
+            {/* Right Sidebar: Details & Booking Status */}
+            <div className="lg:col-span-4 space-y-6">
+              {/* Hotel Summary */}
+              {trip.hotels?.[0] && (
+                <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs">
+                  <span className="text-[10px] uppercase font-bold text-[#0096B4] tracking-wider block mb-1">
+                    Featured Accommodation
+                  </span>
+                  <h4 className="font-bold text-base text-[#0A1628] mb-1">
+                    {trip.hotels[0].hotelName}
+                  </h4>
+                  <p className="text-xs text-slate-500 mb-3 truncate">
+                    {trip.hotels[0].address}
+                  </p>
+                  <div className="rounded-xl overflow-hidden aspect-video mb-3">
+                    <img
+                      src="/assets/pathora/destinations/hotel-granvia.jpg"
+                      alt={trip.hotels[0].hotelName}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-bold text-emerald-600">{trip.hotels[0].price || '$140/night'}</span>
+                    <span className="text-slate-500 font-medium">★ {trip.hotels[0].rating || '4.8'} rating</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Community Members Pill */}
+              <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs">
+                <h4 className="font-bold text-sm text-[#0A1628] mb-3">
+                  Confirmed Members ({members.length})
+                </h4>
+                <div className="flex flex-wrap gap-2">
+                  {members.map((m, idx) => (
+                    <div key={idx} className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 rounded-lg text-xs font-semibold text-slate-700 border border-slate-100">
+                      <span className="w-5 h-5 rounded-full bg-[#0A1628] text-white flex items-center justify-center text-[10px]">
+                        {m.userId?.username?.[0]?.toUpperCase() || 'T'}
+                      </span>
+                      <span>{m.userId?.username || 'Traveler'}</span>
+                    </div>
+                  ))}
+                  {members.length === 0 && (
+                    <p className="text-xs text-slate-400">Be the first to join this journey!</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'itinerary' && (
+          <div className="space-y-6">
+            <ItinerarySection itinerary={trip.itinerary} tripHotelName={trip.hotels?.[0]?.hotelName} />
+          </div>
+        )}
+
+        {activeTab === 'hotels' && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {trip.hotels?.map((hotel, index) => (
+              <TripCard
+                key={index}
+                hotel={hotel}
+                isHotel={true}
+                tripId={id}
+                tripHotelName={trip.hotels?.[0]?.hotelName}
+              />
+            ))}
+          </div>
+        )}
+
+        {activeTab === 'members' && (
+          <div className="bg-white rounded-2xl p-6 sm:p-8 border border-slate-200 shadow-xs">
+            <h3 className="text-lg font-bold text-[#0A1628] mb-4 font-jakarta">
+              Travelers on this Path
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              {members.map((m, idx) => (
+                <div key={idx} className="flex items-center gap-3 p-4 rounded-xl bg-slate-50 border border-slate-200">
+                  <div className="w-10 h-10 rounded-full bg-[#00B4D8] text-white flex items-center justify-center font-bold text-sm">
+                    {m.userId?.username?.[0]?.toUpperCase() || 'T'}
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-sm text-[#0A1628]">{m.userId?.username}</h4>
+                    <span className="text-[10px] text-emerald-600 font-bold uppercase">Approved Member</span>
+                  </div>
+                </div>
               ))}
             </div>
-          </section>
+          </div>
+        )}
 
-          {/* Itinerary Section */}
-          <section className="relative">
-            <div className="mb-8">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-2 h-10 bg-linear-to-b from-emerald-500 to-green-500 rounded-full"></div>
-                <h2 className="text-3xl font-bold text-gray-800">
-                  🗓 Daily Itinerary Plan
-                </h2>
-              </div>
-              <p className="text-gray-600 text-lg">
-                Your personalized day-by-day adventure schedule
-              </p>
-            </div>
+        {/* Global Journey Actions & Summary Bar */}
+        <section className="mt-12 bg-white rounded-3xl p-8 border border-slate-200 shadow-xs">
+          <div className="max-w-3xl mx-auto text-center">
+            <span className="text-xs font-bold uppercase tracking-wider text-[#00B4D8]">
+              Ready for Departure?
+            </span>
+            <h3 className="text-2xl sm:text-3xl font-extrabold text-[#0A1628] font-jakarta mt-1 mb-3">
+              Embark on this Journey to {trip.destination}
+            </h3>
+            <p className="text-slate-600 text-xs sm:text-sm mb-6 max-w-xl mx-auto">
+              Coordinate with fellow travelers, review curated waypoints, and export your itinerary for offline navigation.
+            </p>
 
-            <div className="space-y-8">
-              <ItinerarySection itinerary={trip.itinerary} tripHotelName={trip.hotels?.[0]?.hotelName} />
-            </div>
-          </section>
-
-          {/* Summary & Actions */}
-          <section className="bg-linear-to-br from-blue-50/50 to-purple-50/50 rounded-3xl p-8 border border-gray-200/50">
-            <div className="max-w-3xl mx-auto text-center">
-              <h3 className="text-2xl font-bold text-gray-800 mb-4">
-                Ready to Join This Adventure?
-              </h3>
-              <p className="text-gray-600 mb-8">
-                Connect with the group, discuss plans, and get ready for your trip to {trip.destination}.
-              </p>
-
-              <div className="flex flex-col sm:flex-row flex-wrap justify-center gap-4">
-                {/* Dynamic Logic for Booking/Chat */}
-                {bookingStatus === 'none' && (
-                  <button
-                    onClick={handleJoinTrip}
-                    className="px-8 py-4 bg-linear-to-r from-blue-600 to-purple-600 text-white font-bold rounded-xl hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5 flex items-center justify-center gap-2"
-                  >
-                    <Users className="w-5 h-5" />
-                    Request to Join Trip
-                  </button>
-                )}
-
-                {bookingStatus === 'pending' && (
-                  <button
-                    disabled
-                    className="px-8 py-4 bg-yellow-100 text-yellow-800 font-bold rounded-xl cursor-not-allowed flex items-center justify-center gap-2 border border-yellow-200"
-                  >
-                    <Clock className="w-5 h-5" />
-                    Pending Admin Validation
-                  </button>
-                )}
-
-                {bookingStatus === 'approved' && (
-                  <div className="flex flex-col sm:flex-row gap-4 w-full justify-center">
-                    <button
-                      disabled
-                      className="px-8 py-4 bg-green-100 text-green-800 font-bold rounded-xl cursor-default flex items-center justify-center gap-2 border border-green-200"
-                    >
-                      <CheckCircle className="w-5 h-5" />
-                      Trip Approved
-                    </button>
-                    <Link
-                      to={`/chat?tripId=${id}`}
-                      className="px-8 py-4 bg-linear-to-r from-emerald-500 to-teal-600 text-white font-bold rounded-xl hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5 flex items-center justify-center gap-2"
-                    >
-                      <Navigation className="w-5 h-5" />
-                      Chat with Approved Members
-                    </Link>
-                  </div>
-                )}
-
-                {bookingStatus === 'revoked' && (
-                  <div className="px-8 py-4 bg-red-100 text-red-800 font-bold rounded-xl flex items-center justify-center gap-2 border border-red-200">
-                    <Shield className="w-5 h-5" />
-                    Access Revoked by Admin
-                  </div>
-                )}
-
-                {bookingStatus === 'rejected' && (
-                  <div className="px-8 py-4 bg-red-100 text-red-800 font-bold rounded-xl flex items-center justify-center gap-2 border border-red-200">
-                    <XCircle className="w-5 h-5" />
-                    Join Request Rejected
-                  </div>
-                )}
-
-                {/* Standard Actions */}
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              {/* Dynamic Logic for Booking/Chat */}
+              {bookingStatus === 'none' && (
                 <button
-                  onClick={() => window.print()}
-                  className="px-6 py-4 bg-white border-2 border-gray-200 text-gray-700 font-semibold rounded-xl hover:border-blue-300 hover:bg-blue-50 transition-all duration-300"
+                  type="button"
+                  onClick={handleJoinTrip}
+                  className="px-6 py-3 rounded-xl font-bold text-xs text-white bg-[#00B4D8] hover:bg-[#0096B4] shadow-md shadow-[#00B4D8]/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
                 >
-                  Download Itinerary
+                  <Users className="w-4 h-4" />
+                  <span>Request to Join Trip</span>
                 </button>
-                <button onClick={handleShare} className="px-6 py-4 bg-white border-2 border-gray-200 text-gray-700 font-semibold rounded-xl hover:border-purple-300 hover:bg-purple-50 transition-all duration-300">
-                  Share Trip
-                </button>
+              )}
 
-                {/* New Package Details Button */}
-                <button
-                  onClick={() => setShowTripDetails(true)}
-                  className="px-6 py-4 bg-gradient-to-r from-orange-400 to-red-500 text-white font-semibold rounded-xl hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5 flex items-center gap-2"
-                >
-                  <Navigation className="w-5 h-5" />
-                  Trip Details
-                </button>
-              </div>
-            </div>
-          </section>
+              {bookingStatus === 'pending' && (
+                <div className="px-5 py-3 rounded-xl text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200 flex items-center gap-2">
+                  <Clock className="w-4 h-4 animate-pulse" />
+                  <span>Pending Admin/Organiser Review</span>
+                </div>
+              )}
 
+              {bookingStatus === 'approved' && (
+                <div className="flex items-center gap-2">
+                  <div className="px-4 py-3 rounded-xl text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1.5">
+                    <CheckCircle className="w-4 h-4" />
+                    <span>Member Confirmed</span>
+                  </div>
+                  <Link
+                    to={`/chat?tripId=${id}`}
+                    className="px-5 py-3 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 shadow-sm transition-all flex items-center gap-1.5"
+                  >
+                    <MessageCircle className="w-4 h-4" />
+                    <span>Group Chat</span>
+                  </Link>
+                </div>
+              )}
 
+              {bookingStatus === 'rejected' && (
+                <div className="px-5 py-3 rounded-xl text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200 flex items-center gap-1.5">
+                  <XCircle className="w-4 h-4" />
+                  <span>Join Request Declined</span>
+                </div>
+              )}
 
-          {/* Custom Trip Details Modal */}
-          {showTripDetails && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-all duration-300">
-              <div
-                className="bg-white w-full max-w-4xl max-h-[90vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col transform transition-all scale-100"
-                role="dialog"
-                aria-modal="true"
+              <button
+                type="button"
+                onClick={() => setShowTripDetails(true)}
+                className="px-5 py-3 bg-[#FF6B35] hover:bg-[#E85D26] text-white text-xs font-bold rounded-xl shadow-md shadow-[#FF6B35]/20 transition-all flex items-center gap-1.5 cursor-pointer"
               >
-                {/* Modal Header */}
-                <div className="relative px-8 py-6 bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 shrink-0">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h2 className="text-3xl font-bold text-white mb-2">Trip Overview</h2>
-                      <div className="flex items-center gap-4 text-blue-100">
-                        <span className="flex items-center gap-1 bg-white/20 px-3 py-1 rounded-full text-sm backdrop-blur-md border border-white/10">
-                          <MapPin className="w-4 h-4" /> {trip.destination}
-                        </span>
-                        <span className="flex items-center gap-1 bg-white/20 px-3 py-1 rounded-full text-sm backdrop-blur-md border border-white/10">
-                          <Clock className="w-4 h-4" /> {trip.duration} Days
-                        </span>
-                      </div>
+                <Navigation className="w-4 h-4" />
+                <span>Trip Overview & Roadmap</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => window.print()}
+                className="px-5 py-3 bg-white border border-slate-200 hover:border-[#00B4D8] text-slate-700 hover:text-[#00B4D8] text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 shadow-xs cursor-pointer"
+              >
+                <Calendar className="w-4 h-4" />
+                <span>Download PDF</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleShare}
+                className="px-5 py-3 bg-white border border-slate-200 hover:border-[#00B4D8] text-slate-700 hover:text-[#00B4D8] text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 shadow-xs cursor-pointer"
+              >
+                <Share2 className="w-4 h-4" />
+                <span>Share Path</span>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        {/* Custom Trip Details Modal */}
+        {showTripDetails && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs transition-all duration-300">
+            <div
+              className="bg-white w-full max-w-4xl max-h-[90vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col transform transition-all scale-100"
+              role="dialog"
+              aria-modal="true"
+            >
+              {/* Modal Header */}
+              <div className="relative px-8 py-6 bg-[#0A1628] shrink-0 border-b border-slate-800">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-[10px] uppercase font-bold tracking-widest text-[#00E5FF]">Comprehensive Guide</span>
+                    <h2 className="text-2xl font-extrabold text-white font-jakarta mt-0.5 mb-2">{trip.destination} Overview</h2>
+                    <div className="flex items-center gap-2 text-slate-300 text-xs">
+                      <span className="flex items-center gap-1 bg-white/10 px-3 py-1 rounded-full backdrop-blur-md">
+                        <MapPin className="w-3.5 h-3.5 text-[#00B4D8]" /> {trip.destination}
+                      </span>
+                      <span className="flex items-center gap-1 bg-white/10 px-3 py-1 rounded-full backdrop-blur-md">
+                        <Clock className="w-3.5 h-3.5 text-[#FF6B35]" /> {trip.duration || 5} Days
+                      </span>
                     </div>
-                    <button
-                      onClick={() => setShowTripDetails(false)}
-                      className="p-2 bg-white/20 hover:bg-white/30 rounded-full text-white transition-colors"
-                    >
-                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
                   </div>
-
-                  {/* Decorative circles */}
-                  <div className="absolute top-0 right-0 -mt-4 -mr-4 w-32 h-32 bg-white/10 rounded-full blur-2xl pointer-events-none"></div>
-                  <div className="absolute bottom-0 left-1/4 w-24 h-24 bg-purple-500/20 rounded-full blur-xl pointer-events-none"></div>
-                </div>
-
-                {/* Modal Content */}
-                <div className="p-8 overflow-y-auto custom-scrollbar bg-gray-50/50">
-                  <div className="space-y-10">
-
-                    {/* Hotel Summary */}
-                    <div>
-                      <h3 className="flex items-center gap-3 text-xl font-bold text-gray-900 mb-6">
-                        <div className="p-2 bg-blue-100 rounded-lg">
-                          <MapPin className="w-6 h-6 text-blue-600" />
-                        </div>
-                        Accommodation Highlights
-                      </h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {trip.hotels?.map((hotel, idx) => (
-                          <div key={idx} className="group bg-white rounded-2xl p-4 shadow-sm hover:shadow-md border border-gray-100 transition-all duration-300 flex gap-4">
-                            <div className="w-24 h-24 shrink-0 rounded-xl overflow-hidden bg-gray-200">
-                              <img
-                                src={hotel?.imageUrl || '/placeholder.jpg'}
-                                alt={hotel?.hotelName}
-                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                                onError={(e) => {
-                                  e.target.src = '/placeholder.jpg';
-                                }}
-                              />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <h4 className="font-bold text-gray-900 truncate">{hotel?.hotelName}</h4>
-                              <p className="text-sm text-gray-500 mb-2 truncate">{hotel?.address}</p>
-                              <div className="flex items-center justify-between">
-                                <span className="inline-block px-2 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-md">
-                                  {hotel?.price}
-                                </span>
-                                <div className="flex items-center gap-1 text-amber-500 text-sm font-bold">
-                                  <Star className="w-3 h-3 fill-current" />
-                                  <span>{hotel?.rating}</span>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="h-px bg-gray-200"></div>
-
-                    {/* Itinerary Preview */}
-                    <div>
-                      <h3 className="flex items-center gap-3 text-xl font-bold text-gray-900 mb-6">
-                        <div className="p-2 bg-purple-100 rounded-lg">
-                          <Calendar className="w-6 h-6 text-purple-600" />
-                        </div>
-                        Itinerary Roadmap
-                      </h3>
-
-                      <div className="relative border-l-2 border-purple-200 ml-4 space-y-8 pb-4">
-                        {Object.entries(trip.itinerary || {}).sort((a, b) => {
-                          const dayA = parseInt(a[0].replace(/\D/g, '')) || 0;
-                          const dayB = parseInt(b[0].replace(/\D/g, '')) || 0;
-                          return dayA - dayB;
-                        }).map(([day, details], idx) => (
-                          <div key={idx} className="relative pl-8">
-                            {/* Dot */}
-                            <div className="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-white border-4 border-purple-500 shadow-sm"></div>
-
-                            <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 hover:border-purple-200 transition-colors">
-                              <div className="flex items-center justify-between mb-2">
-                                <span className="text-purple-600 font-bold uppercase tracking-wider text-sm">
-                                  {day}
-                                </span>
-                                <span className="text-gray-400 text-xs bg-gray-100 px-2 py-1 rounded-full">{details?.time || 'All Day'}</span>
-                              </div>
-                              <h4 className="font-bold text-lg text-gray-800 mb-2">
-                                {details?.theme || details?.placeName || 'Exploration Day'}
-                              </h4>
-                              <p className="text-gray-600 text-sm leading-relaxed line-clamp-2">
-                                {details?.details || details?.description || 'Enjoy a wonderful day exploring the best spots in the city.'}
-                              </p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                  </div>
-                </div>
-
-                {/* Footer Modal */}
-                <div className="p-6 bg-white border-t border-gray-100 shrink-0 flex justify-end gap-3">
                   <button
                     onClick={() => setShowTripDetails(false)}
-                    className="px-6 py-2.5 text-gray-600 font-semibold hover:bg-gray-100 rounded-xl transition-colors"
+                    className="p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors cursor-pointer"
+                    aria-label="Close modal"
                   >
-                    Close
-                  </button>
-                  <button
-                    onClick={() => { setShowTripDetails(false); window.print(); }}
-                    className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl shadow-lg shadow-blue-200 transition-all transform hover:-translate-y-0.5"
-                  >
-                    Download PDF
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
                   </button>
                 </div>
               </div>
+
+              {/* Modal Content */}
+              <div className="p-6 sm:p-8 overflow-y-auto space-y-8 bg-[#F8FAFC]">
+                {/* Accommodation Highlights */}
+                {trip.hotels?.length > 0 && (
+                  <div>
+                    <h3 className="flex items-center gap-2 text-base font-bold text-[#0A1628] mb-4 font-jakarta">
+                      <MapPin className="w-4 h-4 text-[#00B4D8]" />
+                      Accommodation Highlights
+                    </h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {trip.hotels.map((hotel, idx) => (
+                        <div key={idx} className="bg-white rounded-2xl p-4 shadow-xs border border-slate-200 flex gap-4 items-center">
+                          <div className="w-20 h-20 shrink-0 rounded-xl overflow-hidden bg-slate-100">
+                            <img
+                              src={hotel?.imageUrl || '/assets/pathora/destinations/hotel-granvia.jpg'}
+                              alt={hotel?.hotelName}
+                              className="w-full h-full object-cover"
+                              onError={(e) => { e.target.src = '/assets/pathora/destinations/hotel-granvia.jpg'; }}
+                            />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-bold text-xs text-[#0A1628] truncate">{hotel?.hotelName}</h4>
+                            <p className="text-[11px] text-slate-500 truncate mb-2">{hotel?.address}</p>
+                            <div className="flex items-center justify-between">
+                              <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 text-[10px] font-bold rounded-md">
+                                {hotel?.price || '$120 - $220/night'}
+                              </span>
+                              <div className="flex items-center gap-1 text-amber-500 text-xs font-bold">
+                                <Star className="w-3 h-3 fill-current" />
+                                <span>{hotel?.rating || '4.8'}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Itinerary Roadmap */}
+                <div>
+                  <h3 className="flex items-center gap-2 text-base font-bold text-[#0A1628] mb-4 font-jakarta">
+                    <Calendar className="w-4 h-4 text-[#00B4D8]" />
+                    Itinerary Roadmap
+                  </h3>
+
+                  <div className="relative border-l-2 border-[#00B4D8]/30 ml-4 space-y-6 pb-2">
+                    {Array.isArray(trip.itinerary) ? (
+                      trip.itinerary.map((dayPlan, idx) => (
+                        <div key={idx} className="relative pl-6">
+                          <div className="absolute -left-[7px] top-1.5 w-3 h-3 rounded-full bg-white border-2 border-[#00B4D8] shadow-xs" />
+                          <div className="bg-white p-4 rounded-xl shadow-xs border border-slate-200">
+                            <div className="flex items-center justify-between mb-1.5">
+                              <span className="text-[#0096B4] font-bold uppercase text-[10px] tracking-wider font-jakarta">
+                                Day {dayPlan.day || idx + 1}
+                              </span>
+                              <span className="text-slate-400 text-[10px] bg-slate-50 px-2 py-0.5 rounded-full border border-slate-100">
+                                {dayPlan.places?.length || 0} stops
+                              </span>
+                            </div>
+                            <h4 className="font-bold text-xs text-[#0A1628] mb-1">
+                              {dayPlan.title || `Day ${dayPlan.day} Exploration`}
+                            </h4>
+                            <p className="text-slate-500 text-[11px] leading-relaxed line-clamp-2">
+                              {dayPlan.places?.[0]?.details || 'Custom curated exploration path for today.'}
+                            </p>
+                          </div>
+                        </div>
+                      ))
+                    ) : typeof trip.itinerary === 'object' && trip.itinerary !== null ? (
+                      Object.entries(trip.itinerary).map(([dayKey, details], idx) => (
+                        <div key={idx} className="relative pl-6">
+                          <div className="absolute -left-[7px] top-1.5 w-3 h-3 rounded-full bg-white border-2 border-[#00B4D8] shadow-xs" />
+                          <div className="bg-white p-4 rounded-xl shadow-xs border border-slate-200">
+                            <span className="text-[#0096B4] font-bold uppercase text-[10px] tracking-wider font-jakarta block mb-1">
+                              {dayKey}
+                            </span>
+                            <h4 className="font-bold text-xs text-[#0A1628] mb-1">
+                              {details?.theme || details?.placeName || 'Exploration Day'}
+                            </h4>
+                            <p className="text-slate-500 text-[11px] leading-relaxed line-clamp-2">
+                              {details?.details || details?.description || 'Enjoy a wonderful day exploring destination highlights.'}
+                            </p>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-xs text-slate-400 pl-4">Itinerary details loading...</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="p-5 bg-white border-t border-slate-200 shrink-0 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowTripDetails(false)}
+                  className="px-5 py-2.5 text-slate-600 font-bold hover:bg-slate-50 rounded-xl text-xs transition-colors cursor-pointer"
+                >
+                  Close
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setShowTripDetails(false); window.print(); }}
+                  className="px-5 py-2.5 bg-[#00B4D8] hover:bg-[#0096B4] text-white font-bold rounded-xl text-xs shadow-xs transition-all cursor-pointer flex items-center gap-1.5"
+                >
+                  <Calendar className="w-3.5 h-3.5" />
+                  <span>Download PDF</span>
+                </button>
+              </div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
+
       </div>
     </div>
   );

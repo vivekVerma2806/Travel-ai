@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
     LayoutDashboard, Users, Map, MessageSquare,
     CheckCircle, XCircle, Clock, ChevronRight,
-    Search, Filter, ExternalLink, Shield
+    Search, Filter, ExternalLink, ShieldCheck, Plus, Compass
 } from 'lucide-react';
 import api from '../service/api';
 import { useAuth } from '../context/AuthContext';
@@ -17,6 +17,7 @@ const OrganiserDashboard = () => {
     const [requests, setRequests] = useState([]);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('overview');
+    const [searchQuery, setSearchQuery] = useState('');
 
     useEffect(() => {
         if (!user || (user.role !== 'organiser' && user.role !== 'admin')) {
@@ -33,8 +34,8 @@ const OrganiserDashboard = () => {
                 api.get('/organiser/my-managed-trips'),
                 api.get('/organiser/join-requests')
             ]);
-            setTrips(tripsRes.data);
-            setRequests(requestsRes.data);
+            setTrips(tripsRes.data || []);
+            setRequests(requestsRes.data || []);
         } catch (err) {
             console.error("Failed to fetch organiser data", err);
             toast.error("Failed to load dashboard data");
@@ -53,170 +54,180 @@ const OrganiserDashboard = () => {
         }
     };
 
-    if (loading) return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50">
-            <div className="flex flex-col items-center gap-4">
-                <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                <p className="text-gray-500 font-medium tracking-wide">Loading Organiser Panel...</p>
+    const pendingRequests = requests.filter(r => r.status === 'pending');
+    const approvedRequests = requests.filter(r => r.status === 'approved');
+
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center">
+                <div className="flex flex-col items-center gap-3">
+                    <div className="w-10 h-10 border-3 border-[#00B4D8] border-t-transparent rounded-full animate-spin" />
+                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Loading Organiser Hub...</p>
+                </div>
             </div>
-        </div>
-    );
+        );
+    }
 
     return (
-        <div className="min-h-screen bg-gray-50 flex">
-            {/* Sidebar */}
-            <aside className="w-64 bg-white border-r border-gray-200 hidden md:flex flex-col">
-                <div className="p-6 border-b border-gray-100">
+        <div className="min-h-screen bg-[#F8FAFC] py-10 px-4 sm:px-6 lg:px-8">
+            <div className="max-w-7xl mx-auto space-y-6">
+
+                {/* Header */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <span className="text-xs font-bold uppercase tracking-wider text-[#00B4D8]">
+                            Expedition Coordination
+                        </span>
+                        <h1 className="text-2xl sm:text-3xl font-extrabold text-[#0A1628] font-jakarta mt-0.5">
+                            Organiser Hub
+                        </h1>
+                        <p className="text-xs text-slate-500 mt-0.5">
+                            Welcome back, <span className="font-bold text-[#0A1628]">{user?.username}</span>. Manage your journeys and traveler requests.
+                        </p>
+                    </div>
+
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-200">
-                            <Shield className="w-6 h-6 text-white" />
-                        </div>
-                        <div>
-                            <h2 className="font-bold text-gray-900 leading-tight">Organiser</h2>
-                            <p className="text-xs text-blue-600 font-semibold uppercase tracking-wider">Dashboard</p>
-                        </div>
+                        <span className="px-3 py-1 bg-white border border-slate-200 text-slate-700 text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-xs">
+                            <ShieldCheck className="w-3.5 h-3.5 text-[#00B4D8]" />
+                            Organiser Access
+                        </span>
+                        <button
+                            onClick={() => navigate('/create-trip')}
+                            className="px-4 py-2 bg-[#00B4D8] hover:bg-[#0096B4] text-white rounded-xl text-xs font-bold shadow-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                        >
+                            <Plus className="w-3.5 h-3.5" />
+                            <span>Plan New Journey</span>
+                        </button>
                     </div>
                 </div>
 
-                <nav className="flex-1 p-4 space-y-2">
+                {/* Navigation Tabs */}
+                <div className="flex items-center gap-2 p-1 bg-white border border-slate-200 rounded-xl shadow-xs w-fit">
                     {[
                         { id: 'overview', label: 'Overview', icon: LayoutDashboard },
-                        { id: 'trips', label: 'My Trips', icon: Map },
-                        { id: 'requests', label: 'Join Requests', icon: Users },
-                        { id: 'chat', label: 'Community', icon: MessageSquare },
+                        { id: 'trips', label: `Managed Journeys (${trips.length})`, icon: Map },
+                        { id: 'requests', label: `Join Requests (${requests.length})`, icon: Users },
                     ].map((item) => (
                         <button
                             key={item.id}
                             onClick={() => setActiveTab(item.id)}
-                            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${activeTab === item.id
-                                    ? 'bg-blue-50 text-blue-600 shadow-sm font-semibold'
-                                    : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
-                                }`}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                                activeTab === item.id
+                                    ? 'bg-[#00B4D8] text-white shadow-xs'
+                                    : 'text-slate-600 hover:text-slate-900'
+                            }`}
                         >
-                            <item.icon className="w-5 h-5" />
-                            {item.label}
+                            <item.icon className="w-3.5 h-3.5" />
+                            <span>{item.label}</span>
                         </button>
                     ))}
-                </nav>
-
-                <div className="p-4 border-t border-gray-100">
-                    <div className="bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl p-4 text-white">
-                        <p className="text-xs opacity-80 mb-1">Total Trips</p>
-                        <p className="text-2xl font-bold mb-3">{trips.length}</p>
-                        <button
-                            onClick={() => navigate('/create-trip')}
-                            className="w-full py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-medium transition-colors"
-                        >
-                            + New Trip
-                        </button>
-                    </div>
                 </div>
-            </aside>
 
-            {/* Main Content */}
-            <main className="flex-1 p-6 md:p-10 overflow-auto">
-                <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-10">
-                    <div>
-                        <h1 className="text-3xl font-extrabold text-gray-900">Welcome Back, {user?.username}</h1>
-                        <p className="text-gray-500 mt-1">Manage your trips and approved travelers here.</p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                        <div className="relative group flex-1 md:w-64">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                            <input
-                                type="text"
-                                placeholder="Search everything..."
-                                className="w-full pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-100 transition-all outline-none text-sm"
-                            />
-                        </div>
-                    </div>
-                </header>
-
+                {/* Tab 1: Overview */}
                 {activeTab === 'overview' && (
-                    <div className="space-y-8 animate-in fade-in duration-500">
+                    <div className="space-y-6">
                         {/* Stats Grid */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
-                                <div className="flex items-center justify-between mb-4">
-                                    <div className="p-3 bg-blue-50 rounded-xl text-blue-600">
-                                        <Map className="w-6 h-6" />
-                                    </div>
-                                    <span className="text-green-500 text-xs font-bold">+2 New</span>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs flex items-center justify-between">
+                                <div>
+                                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Managed Journeys</span>
+                                    <p className="text-3xl font-black text-[#0A1628] font-jakarta mt-1">{trips.length}</p>
                                 </div>
-                                <h3 className="text-gray-500 text-sm font-medium">Active Trips</h3>
-                                <p className="text-3xl font-bold text-gray-900">{trips.length}</p>
+                                <div className="p-3 bg-[#E0F2FE] rounded-xl text-[#00B4D8]">
+                                    <Map className="w-6 h-6" />
+                                </div>
                             </div>
-                            <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
-                                <div className="flex items-center justify-between mb-4">
-                                    <div className="p-3 bg-purple-50 rounded-xl text-purple-600">
-                                        <Users className="w-6 h-6" />
-                                    </div>
-                                    <span className="text-yellow-500 text-xs font-bold">{requests.filter(r => r.status === 'pending').length} Pending</span>
+
+                            <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs flex items-center justify-between">
+                                <div>
+                                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Approved Travelers</span>
+                                    <p className="text-3xl font-black text-[#0A1628] font-jakarta mt-1">{approvedRequests.length}</p>
                                 </div>
-                                <h3 className="text-gray-500 text-sm font-medium">Total Travelers</h3>
-                                <p className="text-3xl font-bold text-gray-900">{requests.filter(r => r.status === 'approved').length}</p>
+                                <div className="p-3 bg-emerald-50 rounded-xl text-emerald-600">
+                                    <Users className="w-6 h-6" />
+                                </div>
                             </div>
-                            <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
-                                <div className="flex items-center justify-between mb-4">
-                                    <div className="p-3 bg-green-50 rounded-xl text-green-600">
-                                        <MessageSquare className="w-6 h-6" />
-                                    </div>
-                                    <span className="text-green-500 text-xs font-bold">Live</span>
+
+                            <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs flex items-center justify-between">
+                                <div>
+                                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Pending Actions</span>
+                                    <p className="text-3xl font-black text-[#FF6B35] font-jakarta mt-1">{pendingRequests.length}</p>
                                 </div>
-                                <h3 className="text-gray-500 text-sm font-medium">Active Chats</h3>
-                                <p className="text-3xl font-bold text-gray-900">{trips.length}</p>
+                                <div className="p-3 bg-orange-50 rounded-xl text-[#FF6B35]">
+                                    <Clock className="w-6 h-6" />
+                                </div>
                             </div>
                         </div>
 
-                        {/* Recent Requests Summary */}
-                        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-                            <div className="p-6 border-b border-gray-50 flex items-center justify-between">
-                                <h3 className="font-bold text-gray-900">Recent Join Requests</h3>
-                                <button onClick={() => setActiveTab('requests')} className="text-blue-600 text-sm font-semibold hover:underline flex items-center gap-1">
-                                    View All <ChevronRight className="w-4 h-4" />
+                        {/* Recent Requests Table/Card */}
+                        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+                            <div className="p-5 border-b border-slate-100 flex items-center justify-between">
+                                <div>
+                                    <h3 className="font-extrabold text-sm text-[#0A1628] font-jakarta">Recent Join Requests</h3>
+                                    <p className="text-[11px] text-slate-400">Travelers seeking permission to embark on your curated paths.</p>
+                                </div>
+                                <button
+                                    onClick={() => setActiveTab('requests')}
+                                    className="text-xs font-bold text-[#00B4D8] hover:underline flex items-center gap-1 cursor-pointer"
+                                >
+                                    <span>View All</span>
+                                    <ChevronRight className="w-3.5 h-3.5" />
                                 </button>
                             </div>
-                            <div className="divide-y divide-gray-50">
-                                {requests.slice(0, 5).map((req, idx) => (
-                                    <div key={idx} className="p-6 flex items-center justify-between hover:bg-gray-50 transition-colors">
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center text-gray-600 font-bold">
-                                                {req.userId?.username?.[0]?.toUpperCase()}
+
+                            <div className="divide-y divide-slate-100">
+                                {requests.slice(0, 5).map((req) => (
+                                    <div key={req._id} className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-slate-50 transition-colors">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-full bg-[#E0F2FE] text-[#0096B4] flex items-center justify-center font-bold text-xs uppercase">
+                                                {req.userId?.username?.[0] || 'U'}
                                             </div>
                                             <div>
-                                                <h4 className="font-bold text-gray-900">{req.userId?.username}</h4>
-                                                <p className="text-xs text-gray-500">Wants to join: <span className="text-blue-600 font-medium">{req.tripId?.destination}</span></p>
+                                                <h4 className="font-bold text-xs text-[#0A1628]">{req.userId?.username || 'Explorer'}</h4>
+                                                <p className="text-[11px] text-slate-500">
+                                                    Requested path: <span className="font-bold text-[#00B4D8]">{req.tripId?.destination || 'Destination'}</span>
+                                                </p>
                                             </div>
                                         </div>
+
                                         <div className="flex items-center gap-2">
                                             {req.status === 'pending' ? (
-                                                <>
+                                                <div className="flex items-center gap-2">
                                                     <button
                                                         onClick={() => handleRequestAction(req._id, 'approved')}
-                                                        className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors border border-green-100"
+                                                        className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-colors flex items-center gap-1 cursor-pointer"
                                                     >
-                                                        <CheckCircle className="w-5 h-5" />
+                                                        <CheckCircle className="w-3.5 h-3.5" />
+                                                        <span>Approve</span>
                                                     </button>
                                                     <button
                                                         onClick={() => handleRequestAction(req._id, 'rejected')}
-                                                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors border border-red-100"
+                                                        className="px-3 py-1.5 bg-white border border-rose-200 text-rose-600 hover:bg-rose-50 rounded-lg text-xs font-bold transition-colors flex items-center gap-1 cursor-pointer"
                                                     >
-                                                        <XCircle className="w-5 h-5" />
+                                                        <XCircle className="w-3.5 h-3.5" />
+                                                        <span>Reject</span>
                                                     </button>
-                                                </>
+                                                </div>
                                             ) : (
-                                                <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${req.status === 'approved' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                                                    }`}>
+                                                <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                                                    req.status === 'approved' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+                                                    'bg-rose-50 text-rose-700 border border-rose-200'
+                                                }`}>
                                                     {req.status}
                                                 </span>
                                             )}
                                         </div>
                                     </div>
                                 ))}
+
                                 {requests.length === 0 && (
-                                    <div className="p-20 text-center">
-                                        <Users className="w-12 h-12 text-gray-200 mx-auto mb-4" />
-                                        <p className="text-gray-400">No join requests yet.</p>
+                                    <div className="py-12 text-center">
+                                        <img
+                                            src="/assets/pathora/illustrations/no-results.svg"
+                                            alt="No requests"
+                                            className="w-32 h-24 mx-auto mb-3 object-contain opacity-60"
+                                        />
+                                        <p className="text-xs text-slate-400 font-medium">No pending join requests at this time.</p>
                                     </div>
                                 )}
                             </div>
@@ -224,142 +235,171 @@ const OrganiserDashboard = () => {
                     </div>
                 )}
 
+                {/* Tab 2: Trips */}
                 {activeTab === 'trips' && (
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-in fade-in slide-in-from-bottom-5 duration-500">
-                        {trips.map((trip) => (
-                            <div key={trip._id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-md transition-shadow flex flex-col">
-                                <div className="h-40 bg-gray-200 relative group">
-                                    <img
-                                        src={trip.tripData?.hotels?.[0]?.imageUrl || 'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=800'}
-                                        alt={trip.destination}
-                                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                                    />
-                                    <div className="absolute top-4 left-4">
-                                        <span className="px-3 py-1 bg-white/90 backdrop-blur-md rounded-full text-xs font-bold shadow-sm">
-                                            {trip.duration} Days
-                                        </span>
-                                    </div>
-                                    <div className="absolute top-4 right-4">
-                                        <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-green-500 text-white shadow-lg`}>
-                                            Managed
-                                        </span>
-                                    </div>
-                                </div>
-                                <div className="p-6 flex-1 flex flex-col">
-                                    <div className="flex justify-between items-start mb-4">
-                                        <div>
-                                            <h3 className="text-xl font-bold text-gray-900">{trip.destination}</h3>
-                                            <p className="text-sm text-gray-500 flex items-center gap-1 mt-1">
-                                                <Filter className="w-3 h-3" /> {trip.budget} Budget
-                                            </p>
-                                        </div>
-                                        <button
-                                            onClick={() => navigate(`/view-trip/${trip._id}`)}
-                                            className="p-2 text-gray-400 hover:text-blue-600 transition-colors"
-                                        >
-                                            <ExternalLink className="w-5 h-5" />
-                                        </button>
-                                    </div>
+                    <div className="space-y-6">
+                        {trips.length > 0 ? (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {trips.map((trip) => {
+                                    const tripApprovedCount = requests.filter(r => (r.tripId?._id === trip._id || r.tripId === trip._id) && r.status === 'approved').length;
+                                    return (
+                                        <div key={trip._id} className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-xs hover:shadow-md hover:border-[#00B4D8]/30 transition-all flex flex-col justify-between">
+                                            <div className="relative h-44 bg-slate-100 overflow-hidden">
+                                                <img
+                                                    src={trip.tripData?.locationInfo?.photoUrl ||
+                                                         (trip.destination?.toLowerCase().includes("kyoto") ? "/assets/pathora/destinations/kyoto-banner.jpg" :
+                                                          trip.destination?.toLowerCase().includes("bali") ? "/assets/pathora/destinations/bali.jpg" :
+                                                          trip.destination?.toLowerCase().includes("paris") ? "/assets/pathora/destinations/paris.jpg" :
+                                                          "/assets/pathora/destinations/santorini.jpg")}
+                                                    alt={trip.destination}
+                                                    className="w-full h-full object-cover"
+                                                />
+                                                <div className="absolute top-3 left-3">
+                                                    <span className="px-2.5 py-1 bg-white/95 backdrop-blur-xs rounded-lg text-[10px] font-bold text-[#0A1628] shadow-xs">
+                                                        {trip.duration || 3} Days • {trip.budget || 'Moderate'}
+                                                    </span>
+                                                </div>
+                                                <div className="absolute top-3 right-3">
+                                                    <span className="px-2.5 py-1 bg-[#00B4D8] text-white rounded-lg text-[10px] font-bold uppercase tracking-wider shadow-xs">
+                                                        Active Hub
+                                                    </span>
+                                                </div>
+                                            </div>
 
-                                    <div className="mt-auto pt-6 border-t border-gray-50 flex items-center justify-between">
-                                        <div className="flex -space-x-2">
-                                            {requests.filter(r => r.tripId?._id === trip._id && r.status === 'approved').slice(0, 3).map((r, i) => (
-                                                <div key={i} className="w-8 h-8 rounded-full border-2 border-white bg-blue-100 flex items-center justify-center text-[10px] font-bold text-blue-600">
-                                                    {r.userId?.username?.[0]?.toUpperCase()}
+                                            <div className="p-5 flex-1 flex flex-col justify-between">
+                                                <div>
+                                                    <h3 className="text-base font-extrabold text-[#0A1628] font-jakarta mb-1 truncate">
+                                                        {trip.destination}
+                                                    </h3>
+                                                    <p className="text-xs text-slate-500 mb-4">
+                                                        {tripApprovedCount} Joined Explorers
+                                                    </p>
                                                 </div>
-                                            ))}
-                                            {requests.filter(r => r.tripId?._id === trip._id && r.status === 'approved').length > 3 && (
-                                                <div className="w-8 h-8 rounded-full border-2 border-white bg-gray-100 flex items-center justify-center text-[10px] font-bold text-gray-600">
-                                                    +{requests.filter(r => r.tripId?._id === trip._id && r.status === 'approved').length - 3}
+
+                                                <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
+                                                    <button
+                                                        onClick={() => navigate(`/view-trip/${trip._id}`)}
+                                                        className="text-xs font-bold text-[#00B4D8] hover:underline flex items-center gap-1 cursor-pointer"
+                                                    >
+                                                        <span>View Public Path</span>
+                                                        <ExternalLink className="w-3.5 h-3.5" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => navigate(`/chat?tripId=${trip._id}`)}
+                                                        className="px-3 py-1.5 rounded-lg text-xs font-bold bg-[#E0F2FE] hover:bg-[#BAE6FD] text-[#0096B4] flex items-center gap-1 transition-colors cursor-pointer"
+                                                    >
+                                                        <MessageSquare className="w-3.5 h-3.5" />
+                                                        <span>Chat</span>
+                                                    </button>
                                                 </div>
-                                            )}
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <div className="text-right">
-                                                <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Approved</p>
-                                                <p className="text-sm font-bold text-gray-900">{requests.filter(r => r.tripId?._id === trip._id && r.status === 'approved').length} Members</p>
                                             </div>
                                         </div>
-                                    </div>
-                                </div>
+                                    );
+                                })}
                             </div>
-                        ))}
+                        ) : (
+                            <div className="bg-white border border-slate-200/80 rounded-2xl p-12 text-center max-w-md mx-auto shadow-xs">
+                                <img
+                                    src="/assets/pathora/illustrations/empty-trips.svg"
+                                    alt="No trips"
+                                    className="w-44 h-32 mx-auto mb-4"
+                                />
+                                <h3 className="text-base font-bold text-[#0A1628] font-jakarta mb-1">No Managed Journeys Yet</h3>
+                                <p className="text-xs text-slate-500 mb-6">Create a trip and activate lead organizer features to coordinate groups.</p>
+                                <button
+                                    onClick={() => navigate('/create-trip')}
+                                    className="px-5 py-2.5 bg-[#00B4D8] hover:bg-[#0096B4] text-white text-xs font-bold rounded-xl transition-colors shadow-xs"
+                                >
+                                    Create First Journey
+                                </button>
+                            </div>
+                        )}
                     </div>
                 )}
 
+                {/* Tab 3: Requests */}
                 {activeTab === 'requests' && (
-                    <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-5 duration-500">
-                        <div className="p-8 border-b border-gray-50 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+                        <div className="p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                             <div>
-                                <h3 className="text-xl font-bold text-gray-900">Incoming Requests</h3>
-                                <p className="text-sm text-gray-500 mt-1">Review and approve travelers for your shared trips.</p>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <button className="px-4 py-2 bg-gray-50 text-gray-600 rounded-xl text-sm font-semibold border border-gray-100">All</button>
-                                <button className="px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-semibold border border-blue-100">Pending</button>
+                                <h3 className="font-extrabold text-sm text-[#0A1628] font-jakarta">Incoming Join Requests</h3>
+                                <p className="text-[11px] text-slate-400">Review, validate, or reject travelers requesting to join your expeditions.</p>
                             </div>
                         </div>
 
                         <div className="overflow-x-auto">
                             <table className="w-full text-left">
-                                <thead className="bg-gray-50">
+                                <thead className="bg-[#F8FAFC] border-b border-slate-100">
                                     <tr>
-                                        <th className="px-8 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">User</th>
-                                        <th className="px-8 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Trip Destination</th>
-                                        <th className="px-8 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
-                                        <th className="px-8 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">Actions</th>
+                                        <th className="px-5 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider">Explorer</th>
+                                        <th className="px-5 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider">Destination</th>
+                                        <th className="px-5 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider">Status</th>
+                                        <th className="px-5 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-right">Decision</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-gray-50">
+                                <tbody className="divide-y divide-slate-100">
                                     {requests.map((req) => (
-                                        <tr key={req._id} className="hover:bg-gray-50/50 transition-colors">
-                                            <td className="px-8 py-6">
+                                        <tr key={req._id} className="hover:bg-slate-50/70 transition-colors">
+                                            <td className="px-5 py-4">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold">
-                                                        {req.userId?.username?.[0]?.toUpperCase()}
+                                                    <div className="w-8 h-8 rounded-full bg-[#E0F2FE] text-[#0096B4] flex items-center justify-center text-xs font-bold uppercase">
+                                                        {req.userId?.username?.[0] || 'U'}
                                                     </div>
                                                     <div>
-                                                        <div className="font-bold text-gray-900">{req.userId?.username}</div>
-                                                        <div className="text-xs text-gray-500">{req.userId?.email}</div>
+                                                        <div className="font-bold text-xs text-[#0A1628]">{req.userId?.username || 'Explorer'}</div>
+                                                        <div className="text-[11px] text-slate-400">{req.userId?.email}</div>
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td className="px-8 py-6 font-medium text-gray-700">{req.tripId?.destination}</td>
-                                            <td className="px-8 py-6">
-                                                <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${req.status === 'approved' ? 'bg-green-100 text-green-700' :
-                                                        req.status === 'rejected' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'
-                                                    }`}>
+                                            <td className="px-5 py-4 text-xs font-bold text-[#0A1628]">
+                                                {req.tripId?.destination || 'Custom Path'}
+                                            </td>
+                                            <td className="px-5 py-4">
+                                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                                                    req.status === 'approved' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+                                                    req.status === 'rejected' ? 'bg-rose-50 text-rose-700 border border-rose-200' :
+                                                    'bg-amber-50 text-amber-700 border border-amber-200'
+                                                }`}>
                                                     {req.status}
                                                 </span>
                                             </td>
-                                            <td className="px-8 py-6 text-right">
+                                            <td className="px-5 py-4 text-right">
                                                 {req.status === 'pending' ? (
                                                     <div className="flex items-center justify-end gap-2">
                                                         <button
                                                             onClick={() => handleRequestAction(req._id, 'approved')}
-                                                            className="px-4 py-2 bg-green-600 text-white rounded-xl text-xs font-bold hover:bg-green-700 transition-colors shadow-md shadow-green-100"
+                                                            className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer"
                                                         >
                                                             Approve
                                                         </button>
                                                         <button
                                                             onClick={() => handleRequestAction(req._id, 'rejected')}
-                                                            className="px-4 py-2 bg-white border border-red-200 text-red-600 rounded-xl text-xs font-bold hover:bg-red-50 transition-colors"
+                                                            className="px-3 py-1 bg-white border border-rose-200 text-rose-600 hover:bg-rose-50 rounded-lg text-xs font-bold transition-colors cursor-pointer"
                                                         >
                                                             Reject
                                                         </button>
                                                     </div>
                                                 ) : (
-                                                    <span className="text-gray-400 text-xs font-medium italic">Handled</span>
+                                                    <span className="text-[11px] text-slate-400 font-medium italic">Validated</span>
                                                 )}
                                             </td>
                                         </tr>
                                     ))}
+
+                                    {requests.length === 0 && (
+                                        <tr>
+                                            <td colSpan={4} className="px-5 py-12 text-center text-slate-400 text-xs">
+                                                No join requests received yet.
+                                            </td>
+                                        </tr>
+                                    )}
                                 </tbody>
                             </table>
                         </div>
                     </div>
                 )}
-            </main>
+
+            </div>
         </div>
     );
 };

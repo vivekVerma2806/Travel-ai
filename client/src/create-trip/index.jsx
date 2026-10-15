@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams, Link } from 'react-router-dom'
 import NominatimAutocomplete from '../components/NominatimAutocomplete'
 import { Input } from '../components/ui/input'
 import { Button } from '../components/ui/button'
@@ -9,36 +9,38 @@ import { useToast } from '../components/ui/toast'
 import { useAuth } from '../context/AuthContext'
 import api from '../service/api'
 import TravelLoader from '../components/custom/TravelLoader'
+import { ArrowLeft, Sparkles, MapPin, Calendar, Users, DollarSign, Shield, CheckCircle2 } from 'lucide-react'
 
 function CreateTrip() {
+  const [searchParams] = useSearchParams();
+  const prefilledDest = searchParams.get("destination");
+
+  const [currentStep, setCurrentStep] = useState(1);
   const [selectedBudget, setSelectedBudget] = useState(null)
   const [selectedTraveler, setSelectedTraveler] = useState(null)
-  const [formData, setFormData] = useState({})
-  const [trip, setTrip] = useState(null)
+  const [formData, setFormData] = useState({
+    location: prefilledDest ? { display_name: prefilledDest, name: prefilledDest } : null,
+    noOfDays: 3,
+    budget: null,
+    traveler: null,
+    requestOrganiser: false
+  })
   const [loading, setLoading] = useState(false)
 
-  // Get toast functions correctly
   const toast = useToast()
   const navigate = useNavigate()
   const { user } = useAuth()
 
   const handleInputChange = (name, value) => {
-    setFormData({
-      ...formData,
+    setFormData(prev => ({
+      ...prev,
       [name]: value
-    });
+    }));
   };
 
-  useEffect(() => {
-    console.log("DEBUG CreateTrip: Form data updated:", formData);
-  }, [formData]);
-
-  // ... (keep rest of existing code until GenerateTrip)
-
   const GenerateTrip = async () => {
-    // Check if user is logged in
     if (!user) {
-      toast.error("Please log in to generate a trip!", {
+      toast.error("Please log in to generate your journey!", {
         action: {
           label: "Login",
           onClick: () => navigate('/login')
@@ -48,11 +50,6 @@ function CreateTrip() {
       return;
     }
 
-    console.log("=".repeat(50));
-    console.log("DEBUG GenerateTrip: Starting process");
-    console.log("DEBUG: Current form data:", formData);
-
-    // Validation
     if (
       !formData?.location ||
       !formData?.budget ||
@@ -61,14 +58,11 @@ function CreateTrip() {
       formData.noOfDays < 1 ||
       formData.noOfDays > 7
     ) {
-      toast.error("Please fill all the fields correctly. Days must be between 1 and 7.");
+      toast.error("Please complete all fields. Duration must be between 1 and 7 days.");
       return;
     }
 
-    setLoading(true); // Start Loader
-
-    // Show loading toast (optional, maybe remove since we have a full screen loader now, but keeping for feedback)
-    // const toastId = toast.loading("Generating your trip...");
+    setLoading(true);
 
     try {
       const locationName =
@@ -76,9 +70,7 @@ function CreateTrip() {
         formData.location.name ||
         formData.location.label ||
         formData.location ||
-        "Unknown location";
-
-      console.log("DEBUG: Using location name:", locationName);
+        "Kyoto, Japan";
 
       const tripData = await generateTripPlan(
         locationName,
@@ -87,18 +79,14 @@ function CreateTrip() {
         formData.traveler
       );
 
-      console.log("DEBUG: Generated trip data:", tripData);
-
-      // Validate response structure
       if (
         !tripData ||
         !Array.isArray(tripData.hotels) ||
         !Array.isArray(tripData.itinerary)
       ) {
-        throw new Error("Invalid AI response format - missing required arrays");
+        throw new Error("Invalid AI response format - missing hotel or itinerary data");
       }
 
-      // SAVE TO DATABASE MERN
       const saveResponse = await api.post('/trips', {
         destination: locationName,
         tripData: tripData,
@@ -107,255 +95,330 @@ function CreateTrip() {
         requestOrganiser: formData.requestOrganiser || false
       });
 
-      console.log("DEBUG: Full saveResponse:", saveResponse);
       if (saveResponse && saveResponse.data) {
-        console.log("DEBUG: saveResponse.data:", saveResponse.data);
-        console.log("DEBUG: Trip ID type:", typeof saveResponse.data._id);
-
-        toast.success("Trip generated & saved successfully!");
-        setTrip(tripData);
+        toast.success("Pathora journey generated and saved successfully!");
         navigate('/view-trip/' + saveResponse.data._id);
       }
-
     } catch (err) {
-      console.error("DEBUG GenerateTrip: Error caught:", err);
-      toast.error(`Failed to generate trip: ${err.message || "Unknown error"}`);
+      console.error("DEBUG GenerateTrip Error:", err);
+      toast.error(`Failed to generate itinerary: ${err.message || "Unknown error"}`);
     } finally {
-      setLoading(false); // Stop Loader
+      setLoading(false);
     }
   };
 
-
-  // ... rest of your JSX code remains exactly the same ...
   return (
-    <div className="px-5 sm:px-10 md:px-24 lg:px-48 xl:px-64 py-10">
-      {/* Show Loader when loading */}
+    <div className="min-h-screen bg-[#F8FAFC] py-10 px-4 sm:px-6 lg:px-8">
       {loading && <TravelLoader />}
 
-      {/* Hero Section */}
-      <div className="text-center mb-12">
-        <h1 className="font-bold text-4xl bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-          Tell us your travel preferences
-        </h1>
-
-        <div className="relative mt-4 max-w-2xl mx-auto">
-          <div className="absolute -top-2 -left-2 w-6 h-6 border-t-2 border-l-2 border-blue-400 rounded-tl-lg"></div>
-          <div className="absolute -bottom-2 -right-2 w-6 h-6 border-b-2 border-r-2 border-purple-400 rounded-br-lg"></div>
-
-          <p className="mt-3 text-gray-600 text-lg leading-relaxed px-4 py-6 bg-gradient-to-br from-gray-50 to-white rounded-xl shadow-sm">
-            Just provide some basic information, and our trip planner will generate
-            a customized itinerary based on your preferences.
-          </p>
-        </div>
-      </div>
-
-      {/* Main Form Container */}
-      <div className="bg-white rounded-2xl shadow-xl p-8 md:p-10 border border-gray-100">
-        {/* Destination */}
-        <div className="mb-12">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-3 h-8 bg-gradient-to-b from-blue-500 to-purple-500 rounded-full"></div>
-            <h2 className="text-2xl font-bold text-gray-800">
-              What is your destination of choice?
-            </h2>
-          </div>
-
-          <div className="relative group">
-            <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl blur opacity-20 group-hover:opacity-30 transition duration-500"></div>
-            <div className="relative bg-white rounded-xl">
-              <NominatimAutocomplete
-                onChange={(item) => {
-                  handleInputChange('location', item)
-                }}
-              />
-            </div>
+      <div className="max-w-6xl mx-auto">
+        {/* Top Navigation Bar matching UI Reference */}
+        <div className="flex items-center gap-3 mb-8">
+          <Link
+            to="/"
+            className="p-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 transition-colors cursor-pointer"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </Link>
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-[#0A1628] font-jakarta">
+              Create a New Trip
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-500">
+              Customize your preferences and let Pathora AI craft your personalized path.
+            </p>
           </div>
         </div>
 
-        {/* Days */}
-        <div className="mb-12">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-3 h-8 bg-gradient-to-b from-green-500 to-emerald-500 rounded-full"></div>
-            <h2 className="text-2xl font-bold text-gray-800">
-              How many days are you planning for the trip?
-            </h2>
-          </div>
+        {/* 2-Column Layout matching UI Reference */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
 
-          <div className="relative max-w-xs">
-            <div className="absolute -inset-0.5 bg-gradient-to-r from-green-400 to-emerald-400 rounded-lg blur opacity-20 group-hover:opacity-30 transition duration-500"></div>
-            <div className="relative">
-              <Input
-                type="number"
-                min={0}
-                placeholder="Ex: 3"
-                value={formData.noOfDays ?? ''}
-                onChange={(e) => {
-                  const value = Math.max(0, Number(e.target.value));
-                  handleInputChange('noOfDays', value);
-                }}
-                className="w-full pl-12 pr-6 py-6 text-lg border-2 border-gray-200 rounded-xl focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 transition-all duration-300"
-              />
-              <div className="absolute left-4 top-1/2 transform -translate-y-1/2">
-                <svg className="w-6 h-6 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-              </div>
-              <div className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400">
-                days
-              </div>
-            </div>
-          </div>
-        </div>
+          {/* Left Column: 4-Step Vertical Stepper */}
+          <div className="lg:col-span-4 bg-white rounded-2xl p-6 border border-slate-200 shadow-xs">
+            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-6">
+              Journey Builder
+            </h3>
 
-        {/* Budget Section */}
-        <div className="mb-12">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-3 h-8 bg-gradient-to-b from-yellow-500 to-orange-500 rounded-full"></div>
-            <h2 className="text-2xl font-bold text-gray-800">
-              What is your Budget?
-            </h2>
-          </div>
-
-          <p className="text-lg text-gray-600 mb-8">
-            The budget is exclusively allocated for activities
-          </p>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {SelectBudgetOptions.map((item, index) => (
+            <div className="space-y-6">
+              {/* Step 1 */}
               <div
-                key={index}
-                onClick={() => {
-                  setSelectedBudget(index);
-                  handleInputChange('budget', item.title);
-                }}
-                className={`p-6 border-2 rounded-2xl flex flex-col gap-4 cursor-pointer transition-all duration-300 transform hover:-translate-y-1
-                  ${selectedBudget === index
-                    ? 'border-orange-400 bg-gradient-to-br from-orange-50 to-yellow-50 shadow-lg shadow-orange-100'
-                    : 'border-gray-100 hover:border-orange-200 hover:shadow-xl'
-                  }`}
+                onClick={() => setCurrentStep(1)}
+                className={`flex items-start gap-4 p-3 rounded-xl cursor-pointer transition-all ${
+                  currentStep === 1 ? 'bg-[#F0F9FF] border border-[#00B4D8]/30' : 'hover:bg-slate-50'
+                }`}
               >
-                <div className="flex items-center justify-between">
-                  <div className={`p-3 rounded-xl ${selectedBudget === index ? 'bg-gradient-to-br from-yellow-400 to-orange-400' : 'bg-gray-100'}`}>
-                    <span className={`text-3xl ${selectedBudget === index ? 'text-white' : 'text-gray-700'}`}>
-                      {item.icon}
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0 ${
+                  formData.location ? 'bg-[#00B4D8] text-white' : 'bg-slate-100 text-slate-600'
+                }`}>
+                  1
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-[#0A1628]">Destination</h4>
+                  <p className="text-xs text-slate-500">Where are you going?</p>
+                  {formData.location && (
+                    <span className="text-[11px] text-[#0096B4] font-semibold block mt-1 truncate max-w-[180px]">
+                      {formData.location.name || formData.location.display_name}
                     </span>
-                  </div>
-                  {selectedBudget === index && (
-                    <div className="w-3 h-3 bg-gradient-to-r from-yellow-400 to-orange-400 rounded-full animate-pulse"></div>
                   )}
                 </div>
-
-                <h2 className="font-bold text-xl text-gray-800">
-                  {item.title}
-                </h2>
-                <p className="text-gray-600 leading-relaxed">
-                  {item.desc}
-                </p>
               </div>
-            ))}
-          </div>
-        </div>
 
-        {/* Travelers Section */}
-        <div className="mb-12">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-3 h-8 bg-gradient-to-b from-pink-500 to-rose-500 rounded-full"></div>
-            <h2 className="text-2xl font-bold text-gray-800">
-              Who do you plan on traveling with on your next adventure?
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {SelectTravelersList.map((item, index) => (
+              {/* Step 2 */}
               <div
-                key={index}
-                onClick={() => {
-                  setSelectedTraveler(index);
-                  handleInputChange('traveler', item.title);
-                }}
-                className={`p-6 border-2 rounded-2xl flex flex-col gap-4 cursor-pointer transition-all duration-300 transform hover:-translate-y-1
-                  ${selectedTraveler === index
-                    ? 'border-rose-400 bg-gradient-to-br from-pink-50 to-rose-50 shadow-lg shadow-pink-100'
-                    : 'border-gray-100 hover:border-pink-200 hover:shadow-xl'
-                  }`}
+                onClick={() => setCurrentStep(2)}
+                className={`flex items-start gap-4 p-3 rounded-xl cursor-pointer transition-all ${
+                  currentStep === 2 ? 'bg-[#F0F9FF] border border-[#00B4D8]/30' : 'hover:bg-slate-50'
+                }`}
               >
-                <div className="flex items-center justify-between">
-                  <div className={`p-3 rounded-xl ${selectedTraveler === index ? 'bg-gradient-to-br from-pink-400 to-rose-400' : 'bg-gray-100'}`}>
-                    <span className={`text-3xl ${selectedTraveler === index ? 'text-white' : 'text-gray-700'}`}>
-                      {item.icon}
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0 ${
+                  formData.traveler ? 'bg-[#00B4D8] text-white' : 'bg-slate-100 text-slate-600'
+                }`}>
+                  2
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-[#0A1628]">Travel Details</h4>
+                  <p className="text-xs text-slate-500">When and with whom?</p>
+                  {formData.traveler && (
+                    <span className="text-[11px] text-[#0096B4] font-semibold block mt-1">
+                      {formData.noOfDays} Days • {formData.traveler}
                     </span>
-                  </div>
-                  {selectedTraveler === index && (
-                    <div className="w-3 h-3 bg-gradient-to-r from-pink-400 to-rose-400 rounded-full animate-pulse"></div>
                   )}
                 </div>
-
-                <h2 className="font-bold text-xl text-gray-800">
-                  {item.title}
-                </h2>
-                <p className="text-gray-600 leading-relaxed">
-                  {item.desc}
-                </p>
               </div>
-            ))}
-          </div>
-        </div>
 
-        {/* Organiser Request Section */}
-        <div className="mb-12 p-8 bg-blue-50/50 rounded-3xl border border-blue-100 relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform duration-500">
-            <svg className="w-24 h-24 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z" />
-            </svg>
-          </div>
-
-          <div className="flex flex-col md:flex-row items-center gap-6">
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="p-2 bg-blue-500 rounded-lg shadow-lg shadow-blue-200">
-                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                  </svg>
+              {/* Step 3 */}
+              <div
+                onClick={() => setCurrentStep(3)}
+                className={`flex items-start gap-4 p-3 rounded-xl cursor-pointer transition-all ${
+                  currentStep === 3 ? 'bg-[#F0F9FF] border border-[#00B4D8]/30' : 'hover:bg-slate-50'
+                }`}
+              >
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0 ${
+                  formData.budget ? 'bg-[#00B4D8] text-white' : 'bg-slate-100 text-slate-600'
+                }`}>
+                  3
                 </div>
-                <h2 className="text-xl font-bold text-gray-800">Become the Trip Organiser?</h2>
+                <div>
+                  <h4 className="text-sm font-bold text-[#0A1628]">Preferences</h4>
+                  <p className="text-xs text-slate-500">Tailor your experience</p>
+                  {formData.budget && (
+                    <span className="text-[11px] text-[#0096B4] font-semibold block mt-1">
+                      Budget: {formData.budget}
+                    </span>
+                  )}
+                </div>
               </div>
-              <p className="text-gray-600 text-sm leading-relaxed max-w-xl">
-                Would you like to manage this trip? As an organiser, you can approve who joins, moderate the group chat, and coordinate with the travelers.
+
+              {/* Step 4 */}
+              <div
+                onClick={() => setCurrentStep(4)}
+                className={`flex items-start gap-4 p-3 rounded-xl cursor-pointer transition-all ${
+                  currentStep === 4 ? 'bg-[#F0F9FF] border border-[#00B4D8]/30' : 'hover:bg-slate-50'
+                }`}
+              >
+                <div className="w-8 h-8 rounded-full bg-[#FF6B35] text-white flex items-center justify-center font-bold text-xs shrink-0">
+                  4
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-[#0A1628]">Generate</h4>
+                  <p className="text-xs text-slate-500">Let Pathora AI plan your trip</p>
+                </div>
+              </div>
+            </div>
+
+            {/* AI Capability Note */}
+            <div className="mt-8 p-3.5 bg-[#F0F9FF] rounded-xl border border-cyan-100 flex items-start gap-2.5">
+              <Sparkles className="w-4 h-4 text-[#00B4D8] shrink-0 mt-0.5" />
+              <p className="text-[11px] text-slate-600 leading-relaxed">
+                Powered by Pathora AI engine. Curates geocoded attractions, scenic routes, and hotel suggestions in seconds.
               </p>
             </div>
-
-            <div className="flex items-center gap-4 px-6 py-4 bg-white rounded-2xl shadow-sm border border-blue-50 transition-all hover:shadow-md">
-              <input
-                type="checkbox"
-                id="requestOrganiser"
-                checked={formData.requestOrganiser || false}
-                onChange={(e) => handleInputChange('requestOrganiser', e.target.checked)}
-                className="w-6 h-6 rounded border-gray-300 text-blue-600 focus:ring-blue-500 transition-all cursor-pointer"
-              />
-              <label htmlFor="requestOrganiser" className="font-bold text-gray-700 cursor-pointer select-none">
-                Yes, I want to lead this trip
-              </label>
-            </div>
           </div>
-        </div>
 
-        {/* Action Button */}
-        <div className="pt-8 border-t border-gray-100">
-          <div className="flex justify-end">
-            <div className="relative group">
-              <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl blur opacity-75 group-hover:opacity-100 transition duration-500"></div>
-              <Button
-                onClick={GenerateTrip}
-                className="relative px-10 py-7 text-lg font-semibold bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-xl transform group-hover:-translate-y-0.5 transition-all duration-300 shadow-lg hover:shadow-xl"
-              >
-                <div className="flex items-center gap-3">
-                  Generate trip
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
+          {/* Right Column: Step Forms & Previews */}
+          <div className="lg:col-span-8 bg-white rounded-2xl p-6 sm:p-8 border border-slate-200 shadow-xs">
+
+            {/* STEP 1: DESTINATION */}
+            <div className="mb-8">
+              <div className="flex items-center gap-2.5 mb-2">
+                <span className="w-6 h-6 rounded-full bg-[#00B4D8] text-white flex items-center justify-center font-bold text-xs">
+                  1
+                </span>
+                <h2 className="text-lg font-bold text-[#0A1628]">
+                  Where do you want to go?
+                </h2>
+              </div>
+              <p className="text-xs text-slate-500 mb-4 ml-8.5">
+                Search cities, landmarks, or countries worldwide.
+              </p>
+
+              <div className="relative mb-6">
+                <NominatimAutocomplete
+                  onChange={(item) => {
+                    handleInputChange('location', item)
+                  }}
+                />
+              </div>
+
+              {/* Destination Preview Card matching UI Reference */}
+              <div className="rounded-xl overflow-hidden border border-slate-200 bg-slate-50">
+                <div className="h-44 sm:h-52 w-full relative overflow-hidden">
+                  <img
+                    src={formData.location?.name?.toLowerCase().includes("kyoto") ? "/assets/pathora/destinations/kyoto-banner.jpg" :
+                         formData.location?.name?.toLowerCase().includes("bali") ? "/assets/pathora/destinations/bali.jpg" :
+                         formData.location?.name?.toLowerCase().includes("paris") ? "/assets/pathora/destinations/paris.jpg" :
+                         formData.location?.name?.toLowerCase().includes("tokyo") ? "/assets/pathora/destinations/tokyo.jpg" :
+                         formData.location?.name?.toLowerCase().includes("santorini") ? "/assets/pathora/destinations/santorini.jpg" :
+                         "/assets/pathora/destinations/kyoto-banner.jpg"}
+                    alt="Destination preview"
+                    className="w-full h-full object-cover object-center"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+                  <div className="absolute bottom-3 left-4 text-white">
+                    <span className="text-[10px] uppercase font-bold text-[#00E5FF] tracking-wider">Featured Destination</span>
+                    <h3 className="text-xl font-bold font-jakarta leading-tight">
+                      {formData.location?.name || formData.location?.display_name || "Kyoto, Japan"}
+                    </h3>
+                  </div>
                 </div>
-              </Button>
+                <div className="p-4 text-xs text-slate-600 leading-relaxed">
+                  A perfect blend of ancient traditions and modern culture. Pathora offers stunning temples, beautiful gardens, and rich cultural experiences.
+                </div>
+              </div>
             </div>
+
+            {/* STEP 2: DURATION & TRAVELERS */}
+            <div className="mb-8 pt-6 border-t border-slate-100">
+              <div className="flex items-center gap-2.5 mb-2">
+                <span className="w-6 h-6 rounded-full bg-[#00B4D8] text-white flex items-center justify-center font-bold text-xs">
+                  2
+                </span>
+                <h2 className="text-lg font-bold text-[#0A1628]">
+                  Travel Duration & Group
+                </h2>
+              </div>
+
+              {/* Number of days input */}
+              <div className="mb-6 ml-8.5">
+                <label className="block text-xs font-semibold text-slate-700 mb-2">
+                  Trip Duration (1 - 7 Days)
+                </label>
+                <div className="flex items-center gap-3">
+                  <Input
+                    type="number"
+                    min={1}
+                    max={7}
+                    placeholder="3"
+                    value={formData.noOfDays ?? ''}
+                    onChange={(e) => {
+                      const value = Math.max(1, Math.min(7, Number(e.target.value)));
+                      handleInputChange('noOfDays', value);
+                    }}
+                    className="max-w-[140px] px-4 py-2 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800"
+                  />
+                  <span className="text-xs text-slate-500 font-medium">Days (max 7 recommended for AI density)</span>
+                </div>
+              </div>
+
+              {/* Travelers Selection */}
+              <div className="ml-8.5">
+                <label className="block text-xs font-semibold text-slate-700 mb-3">
+                  Who is traveling with you?
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {SelectTravelersList.map((item, index) => (
+                    <div
+                      key={index}
+                      onClick={() => {
+                        setSelectedTraveler(index);
+                        handleInputChange('traveler', item.title);
+                      }}
+                      className={`p-4 rounded-xl border text-left cursor-pointer transition-all ${
+                        selectedTraveler === index
+                          ? 'border-[#00B4D8] bg-[#F0F9FF] shadow-xs'
+                          : 'border-slate-200 hover:border-slate-300 bg-white'
+                      }`}
+                    >
+                      <div className="text-2xl mb-2">{item.icon}</div>
+                      <h4 className="font-bold text-sm text-[#0A1628]">{item.title}</h4>
+                      <p className="text-xs text-slate-500 mt-0.5">{item.desc}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* STEP 3: BUDGET & LEADERSHIP */}
+            <div className="mb-8 pt-6 border-t border-slate-100">
+              <div className="flex items-center gap-2.5 mb-2">
+                <span className="w-6 h-6 rounded-full bg-[#00B4D8] text-white flex items-center justify-center font-bold text-xs">
+                  3
+                </span>
+                <h2 className="text-lg font-bold text-[#0A1628]">
+                  Budget & Organization
+                </h2>
+              </div>
+
+              {/* Budget options */}
+              <div className="ml-8.5 mb-6">
+                <label className="block text-xs font-semibold text-slate-700 mb-3">
+                  Select your spending tier
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {SelectBudgetOptions.map((item, index) => (
+                    <div
+                      key={index}
+                      onClick={() => {
+                        setSelectedBudget(index);
+                        handleInputChange('budget', item.title);
+                      }}
+                      className={`p-4 rounded-xl border text-left cursor-pointer transition-all ${
+                        selectedBudget === index
+                          ? 'border-[#00B4D8] bg-[#F0F9FF] shadow-xs'
+                          : 'border-slate-200 hover:border-slate-300 bg-white'
+                      }`}
+                    >
+                      <div className="text-2xl mb-2">{item.icon}</div>
+                      <h4 className="font-bold text-sm text-[#0A1628]">{item.title}</h4>
+                      <p className="text-xs text-slate-500 mt-0.5">{item.desc}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Lead Organiser Option */}
+              <div className="ml-8.5 p-4 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
+                <div>
+                  <h4 className="text-xs font-bold text-[#0A1628]">Lead this Journey as Organiser?</h4>
+                  <p className="text-[11px] text-slate-500">
+                    Enables managing member join requests, group chat moderation, and publishing.
+                  </p>
+                </div>
+                <input
+                  type="checkbox"
+                  id="requestOrganiser"
+                  checked={formData.requestOrganiser || false}
+                  onChange={(e) => handleInputChange('requestOrganiser', e.target.checked)}
+                  className="w-5 h-5 rounded border-slate-300 text-[#00B4D8] focus:ring-[#00B4D8] cursor-pointer"
+                />
+              </div>
+            </div>
+
+            {/* STEP 4: ACTION */}
+            <div className="pt-6 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <span className="text-xs text-slate-500">
+                Ready to transform your ideas into a day-by-day plan?
+              </span>
+              <button
+                onClick={GenerateTrip}
+                disabled={loading}
+                className="w-full sm:w-auto px-8 py-3.5 rounded-xl font-bold text-sm text-white bg-[#00B4D8] hover:bg-[#0096B4] shadow-md shadow-[#00B4D8]/30 transition-all flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <Sparkles className="w-4 h-4" />
+                <span>Generate Itinerary with AI</span>
+              </button>
+            </div>
+
           </div>
         </div>
       </div>

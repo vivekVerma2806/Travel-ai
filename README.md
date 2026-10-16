@@ -1,4 +1,4 @@
-# 🌍 TravelAI — Smart Group Travel Planning & Itinerary Generator
+# 🌍pathora — Smart Group Travel Planning & Itinerary Generator
 
 <div align="center">
 
